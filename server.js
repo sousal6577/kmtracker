@@ -11,7 +11,7 @@ const http = require('http');
 moment.locale('pt-br');
 /* 'http://localhost:3000','http://192.168.1.6:3005','http://192.168.1.6:3000', */
 const corsOptions = {
-  origin: ['https://kmtraker.store','https://www.kmtraker.store','https://kmtracker.connecct.net','https://dev4785.d3t9dp7xqhnxhi.amplifyapp.com'],
+  origin: ['https://api.kmtraker.store','https://kmtraker.store','https://www.kmtraker.store','https://kmtracker.connecct.net','https://dev4785.d3t9dp7xqhnxhi.amplifyapp.com'],
   methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE'],
   optionsSuccessStatus: 200,
   credentials: true,
