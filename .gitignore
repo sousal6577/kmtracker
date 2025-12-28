@@ -33,3 +33,4 @@ frontend/.env
 # Firebase
 **/serviceAccountKey.json
 firebase-debug.log
+PROJETO_REFERENCIA.md

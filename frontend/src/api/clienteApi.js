@@ -27,6 +27,22 @@ const clienteApi = {
   },
 
   /**
+   * Atualiza dados do cliente
+   */
+  atualizar: async (clienteId, dados) => {
+    const response = await api.put(`/clientes/${clienteId}`, dados);
+    return response.data;
+  },
+
+  /**
+   * Exclui um cliente
+   */
+  excluir: async (clienteId) => {
+    const response = await api.delete(`/clientes/${clienteId}`);
+    return response.data;
+  },
+
+  /**
    * Busca clientes por termo
    */
   buscar: async (termo) => {

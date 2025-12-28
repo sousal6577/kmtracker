@@ -3,6 +3,14 @@ import api from './axios';
 
 const pagamentoApi = {
   /**
+   * Lista todos os pagamentos
+   */
+  listar: async () => {
+    const response = await api.get('/pagamentos');
+    return response.data;
+  },
+
+  /**
    * Confirma pagamento de um veículo
    */
   confirmar: async (cpf, veiculoId) => {

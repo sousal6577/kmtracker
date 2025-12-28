@@ -10,8 +10,8 @@ const getApiBaseUrl = () => {
   
   // No Codespace, detecta automaticamente
   if (window.location.hostname.includes('.app.github.dev')) {
-    // Troca a porta 5173 por 3005 na URL do Codespace
-    return window.location.origin.replace('-5173.', '-3005.').replace('-5174.', '-3005.') + '/api';
+    // Troca a porta 5173 por 3080 na URL do Codespace
+    return window.location.origin.replace('-5173.', '-3080.').replace('-5174.', '-3080.') + '/api';
   }
   
   // Local development - usa proxy

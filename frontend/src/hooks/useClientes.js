@@ -59,6 +59,51 @@ export function useClientes() {
     }
   }, [carregarClientes]);
 
+  // Adiciona novo cliente (alias para registrarCliente)
+  const adicionarCliente = useCallback(async (dados) => {
+    try {
+      const response = await clienteApi.registrar(dados);
+      if (response.success) {
+        toast.success('Cliente cadastrado com sucesso!');
+        await carregarClientes();
+      }
+      return response;
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Erro ao cadastrar cliente');
+      throw err;
+    }
+  }, [carregarClientes]);
+
+  // Atualiza cliente existente
+  const atualizarCliente = useCallback(async (clienteId, dados) => {
+    try {
+      const response = await clienteApi.atualizar(clienteId, dados);
+      if (response.success) {
+        toast.success('Cliente atualizado com sucesso!');
+        await carregarClientes();
+      }
+      return response;
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Erro ao atualizar cliente');
+      throw err;
+    }
+  }, [carregarClientes]);
+
+  // Remove cliente
+  const removerCliente = useCallback(async (clienteId) => {
+    try {
+      const response = await clienteApi.excluir(clienteId);
+      if (response.success) {
+        toast.success('Cliente excluído com sucesso!');
+        await carregarClientes();
+      }
+      return response;
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Erro ao excluir cliente');
+      throw err;
+    }
+  }, [carregarClientes]);
+
   // Carrega ao montar
   useEffect(() => {
     carregarClientes();
@@ -70,7 +115,10 @@ export function useClientes() {
     error,
     carregarClientes,
     buscarClientes,
-    registrarCliente
+    registrarCliente,
+    adicionarCliente,
+    atualizarCliente,
+    removerCliente,
   };
 }
 
