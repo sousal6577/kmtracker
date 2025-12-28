@@ -1,5 +1,5 @@
 // src/middlewares/authMiddleware.js - Middleware de Autenticação
-import authService from '../services/authService.js';
+import authService from '../services/authServiceV2.js';
 
 /**
  * Middleware para verificar autenticação via JWT
