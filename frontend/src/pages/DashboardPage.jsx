@@ -9,6 +9,9 @@ import {
   Tooltip,
   useTheme,
   useMediaQuery,
+  FormControl,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import {
   People,
@@ -20,6 +23,7 @@ import {
   ArrowForward,
   Speed,
   TrendingUp,
+  CalendarMonth,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clienteApi, pagamentoApi } from '../api';
@@ -37,6 +41,12 @@ const itemVariants = {
   hidden: { opacity: 0 },
   visible: { opacity: 1 },
 };
+
+// Nomes dos meses em português
+const MESES = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+];
 
 // Cores por tipo de veículo
 const VEHICLE_COLORS = {
@@ -216,20 +226,35 @@ export default function DashboardPage() {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const navigate = useNavigate();
   
+  // Data atual para filtros
+  const hoje = new Date();
+  const anoAtual = hoje.getFullYear();
+  const mesAtualNum = hoje.getMonth() + 1;
+  
   const [stats, setStats] = useState(null);
   const [atrasados, setAtrasados] = useState([]);
   const [recentPagamentos, setRecentPagamentos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  
+  // Filtros de período
+  const [anoSelecionado, setAnoSelecionado] = useState(anoAtual);
+  const [mesSelecionado, setMesSelecionado] = useState(mesAtualNum);
+  
+  // Lista de anos disponíveis (últimos 3 anos)
+  const anosDisponiveis = [anoAtual - 2, anoAtual - 1, anoAtual, anoAtual + 1];
 
   const loadData = async (isRefresh = false) => {
     try {
       if (isRefresh) setRefreshing(true);
       
+      // Formato YYYY-MM para o filtro
+      const periodoFiltro = `${anoSelecionado}-${String(mesSelecionado).padStart(2, '0')}`;
+      
       const [statsRes, atrasadosRes, pagamentosRes] = await Promise.all([
         clienteApi.estatisticas(),
         pagamentoApi.listarAtrasados(),
-        pagamentoApi.listar(),
+        pagamentoApi.listar({ referencia: periodoFiltro }),
       ]);
       
       console.log('Stats:', statsRes);
@@ -239,9 +264,25 @@ export default function DashboardPage() {
       if (statsRes.success) setStats(statsRes.estatisticas);
       if (atrasadosRes.success) setAtrasados(atrasadosRes.atrasados || []);
       if (pagamentosRes.success) {
-        const recentes = (pagamentosRes.pagamentos || [])
-          .filter(p => p.status === 'PAGO')
-          .slice(0, 5);
+        const todosPagamentos = pagamentosRes.pagamentos || [];
+        // Calcula estatísticas do mês selecionado
+        const pagosDoMes = todosPagamentos.filter(p => p.status === 'PAGO');
+        const pendentesDoMes = todosPagamentos.filter(p => p.status === 'PENDENTE');
+        const atrasadosDoMes = todosPagamentos.filter(p => p.status === 'ATRASADO');
+        
+        // Atualiza stats com dados do mês selecionado
+        setStats(prev => ({
+          ...prev,
+          mesAtual: {
+            pagos: pagosDoMes.length,
+            pendentes: pendentesDoMes.length,
+            atrasados: atrasadosDoMes.length,
+            totalValor: todosPagamentos.reduce((sum, p) => sum + (parseFloat(p.valor) || 0), 0),
+            totalPago: pagosDoMes.reduce((sum, p) => sum + (parseFloat(p.valorPago || p.valor) || 0), 0),
+          }
+        }));
+        
+        const recentes = pagosDoMes.slice(0, 5);
         setRecentPagamentos(recentes);
       }
     } catch (err) {
@@ -254,7 +295,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [anoSelecionado, mesSelecionado]);
 
   if (loading) return <Loading />;
 
@@ -279,8 +320,10 @@ export default function DashboardPage() {
       <Box
         sx={{
           display: 'flex',
+          flexDirection: { xs: 'column', sm: 'row' },
           justifyContent: 'space-between',
-          alignItems: 'center',
+          alignItems: { xs: 'flex-start', sm: 'center' },
+          gap: { xs: 1.5, sm: 0 },
           mb: { xs: 2, sm: 3 },
         }}
       >
@@ -300,32 +343,99 @@ export default function DashboardPage() {
             </Typography>
           </motion.div>
           <motion.div variants={itemVariants}>
-            <Typography color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.85rem' } }}>
-              Resumo do sistema
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <CalendarMonth sx={{ fontSize: 14, color: '#6366f1' }} />
+              <Typography sx={{ 
+                fontSize: { xs: '0.75rem', sm: '0.85rem' },
+                color: '#6366f1',
+                fontWeight: 600,
+              }}>
+                {MESES[mesSelecionado - 1]} de {anoSelecionado}
+              </Typography>
+            </Box>
           </motion.div>
         </Box>
         
+        {/* Filtros e Atualizar */}
         <motion.div variants={itemVariants}>
-          <Tooltip title="Atualizar">
-            <IconButton
-              onClick={() => loadData(true)}
-              disabled={refreshing}
-              size="small"
-              sx={{
-                backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                '&:hover': { backgroundColor: 'rgba(99, 102, 241, 0.2)' },
-              }}
-            >
-              <Refresh
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {/* Filtro Mês */}
+            <FormControl size="small" sx={{ minWidth: { xs: 90, sm: 110 } }}>
+              <Select
+                value={mesSelecionado}
+                onChange={(e) => setMesSelecionado(e.target.value)}
                 sx={{
-                  fontSize: { xs: 18, sm: 22 },
-                  animation: refreshing ? 'spin 1s linear infinite' : 'none',
-                  '@keyframes spin': { '0%': { transform: 'rotate(0deg)' }, '100%': { transform: 'rotate(360deg)' } },
+                  backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                  borderRadius: '10px',
+                  fontSize: { xs: '0.7rem', sm: '0.8rem' },
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(99, 102, 241, 0.3)',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(99, 102, 241, 0.5)',
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#6366f1',
+                  },
                 }}
-              />
-            </IconButton>
-          </Tooltip>
+              >
+                {MESES.map((mes, index) => (
+                  <MenuItem key={index} value={index + 1} sx={{ fontSize: '0.8rem' }}>
+                    {mes.substring(0, 3)}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            
+            {/* Filtro Ano */}
+            <FormControl size="small" sx={{ minWidth: { xs: 70, sm: 85 } }}>
+              <Select
+                value={anoSelecionado}
+                onChange={(e) => setAnoSelecionado(e.target.value)}
+                sx={{
+                  backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                  borderRadius: '10px',
+                  fontSize: { xs: '0.7rem', sm: '0.8rem' },
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(99, 102, 241, 0.3)',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(99, 102, 241, 0.5)',
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#6366f1',
+                  },
+                }}
+              >
+                {anosDisponiveis.map((ano) => (
+                  <MenuItem key={ano} value={ano} sx={{ fontSize: '0.8rem' }}>
+                    {ano}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            
+            {/* Botão Atualizar */}
+            <Tooltip title="Atualizar">
+              <IconButton
+                onClick={() => loadData(true)}
+                disabled={refreshing}
+                size="small"
+                sx={{
+                  backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                  '&:hover': { backgroundColor: 'rgba(99, 102, 241, 0.2)' },
+                }}
+              >
+                <Refresh
+                  sx={{
+                    fontSize: { xs: 18, sm: 22 },
+                    animation: refreshing ? 'spin 1s linear infinite' : 'none',
+                    '@keyframes spin': { '0%': { transform: 'rotate(0deg)' }, '100%': { transform: 'rotate(360deg)' } },
+                  }}
+                />
+              </IconButton>
+            </Tooltip>
+          </Box>
         </motion.div>
       </Box>
 
