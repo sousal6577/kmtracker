@@ -85,6 +85,10 @@ export default function AdminPage() {
     role: 'operador',
   });
 
+  // Modal de confirmação de exclusão
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
+
   // Carrega dados
   useEffect(() => {
     loadData();
@@ -151,17 +155,28 @@ export default function AdminPage() {
 
     setLoading(true);
     try {
-      // Senha padrão para novos usuários: mudar123
-      const senhaParaEnviar = editingUser 
-        ? (userForm.senha.trim() || undefined) 
-        : (userForm.senha.trim() || 'mudar123');
+      let result;
       
-      const result = await authApi.register({
-        nome: userForm.nome,
-        email: userForm.email,
-        senha: senhaParaEnviar,
-        role: userForm.role,
-      });
+      if (editingUser) {
+        // Atualizar usuário existente
+        const dadosAtualizar = {
+          email: userForm.email,
+          role: userForm.role,
+        };
+        if (userForm.senha.trim()) {
+          dadosAtualizar.novaSenha = userForm.senha.trim();
+        }
+        result = await authApi.updateUser(editingUser.id, dadosAtualizar);
+      } else {
+        // Criar novo usuário
+        const senhaParaEnviar = userForm.senha.trim() || 'mudar123';
+        result = await authApi.register({
+          nome: userForm.nome,
+          email: userForm.email,
+          senha: senhaParaEnviar,
+          role: userForm.role,
+        });
+      }
 
       if (result.success) {
         toast.success(editingUser ? 'Usuário atualizado!' : 'Usuário criado!');
@@ -172,6 +187,36 @@ export default function AdminPage() {
       }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Erro ao salvar usuário');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenDeleteDialog = (user) => {
+    setUserToDelete(user);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleCloseDeleteDialog = () => {
+    setDeleteDialogOpen(false);
+    setUserToDelete(null);
+  };
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+
+    setLoading(true);
+    try {
+      const result = await authApi.deleteUser(userToDelete.id);
+      if (result.success) {
+        toast.success('Usuário excluído com sucesso!');
+        handleCloseDeleteDialog();
+        loadData();
+      } else {
+        toast.error(result.message || 'Erro ao excluir usuário');
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Erro ao excluir usuário');
     } finally {
       setLoading(false);
     }
@@ -310,9 +355,18 @@ export default function AdminPage() {
                         </Box>
                       </TableCell>
                       <TableCell align="right">
-                        <IconButton size="small" onClick={() => handleOpenUserModal(user)} sx={{ color: '#6366f1' }}>
-                          <Edit fontSize="small" />
-                        </IconButton>
+                        <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
+                          <IconButton size="small" onClick={() => handleOpenUserModal(user)} sx={{ color: '#6366f1' }}>
+                            <Edit fontSize="small" />
+                          </IconButton>
+                          <IconButton 
+                            size="small" 
+                            onClick={() => handleOpenDeleteDialog(user)} 
+                            sx={{ color: '#ef4444' }}
+                          >
+                            <Delete fontSize="small" />
+                          </IconButton>
+                        </Box>
                       </TableCell>
                     </TableRow>
                   ))
@@ -458,6 +512,54 @@ export default function AdminPage() {
           </Button>
           <Button onClick={handleSaveUser} disabled={loading}>
             {editingUser ? 'Salvar' : 'Criar Usuário'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Modal de Confirmação de Exclusão */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleCloseDeleteDialog}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            backgroundColor: 'rgba(20, 20, 35, 0.98)',
+            backdropFilter: 'blur(20px)',
+            borderRadius: '16px',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+          },
+        }}
+      >
+        <DialogTitle sx={{ borderBottom: '1px solid rgba(255,255,255,0.1)', pb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: '#ef4444' }}>
+            <Delete />
+            Excluir Usuário
+          </Box>
+        </DialogTitle>
+        
+        <DialogContent sx={{ pt: 3 }}>
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            Esta ação não pode ser desfeita!
+          </Alert>
+          <Typography>
+            Tem certeza que deseja excluir o usuário <strong>{userToDelete?.nome}</strong>?
+          </Typography>
+        </DialogContent>
+        
+        <DialogActions sx={{ p: 2, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+          <Button variant="outlined" onClick={handleCloseDeleteDialog}>
+            Cancelar
+          </Button>
+          <Button 
+            onClick={handleDeleteUser} 
+            disabled={loading}
+            sx={{ 
+              backgroundColor: '#ef4444', 
+              '&:hover': { backgroundColor: '#dc2626' } 
+            }}
+          >
+            Excluir
           </Button>
         </DialogActions>
       </Dialog>

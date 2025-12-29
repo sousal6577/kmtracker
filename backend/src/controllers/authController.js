@@ -69,16 +69,22 @@ class AuthController {
    */
   async register(req, res) {
     try {
-      const { usuario, senha, role } = req.body;
+      const { usuario, senha, role, nome, email } = req.body;
+      const nomeUsuario = nome || usuario;
 
-      if (!usuario || !senha) {
+      if (!nomeUsuario || !senha) {
         return res.status(400).json({ 
           success: false, 
-          message: 'Usuário e senha são obrigatórios' 
+          message: 'Nome e senha são obrigatórios' 
         });
       }
 
-      const result = await authService.createUser(usuario, senha, role);
+      const result = await authService.criarUsuario({
+        nome: nomeUsuario,
+        email,
+        senha,
+        role
+      });
       res.status(201).json(result);
     } catch (error) {
       res.status(error.status || 500).json({ 
@@ -118,8 +124,50 @@ class AuthController {
    */
   async listUsers(req, res) {
     try {
-      const users = await authService.listUsers();
-      res.json({ success: true, users });
+      const result = await authService.listarUsuarios();
+      res.json({ success: true, users: result.usuarios || [] });
+    } catch (error) {
+      res.status(error.status || 500).json({ 
+        success: false, 
+        message: error.message 
+      });
+    }
+  }
+
+  /**
+   * PUT /api/auth/users/:id (admin only)
+   */
+  async updateUser(req, res) {
+    try {
+      const { id } = req.params;
+      const dados = req.body;
+      const result = await authService.atualizarUsuario(id, dados);
+      res.json(result);
+    } catch (error) {
+      res.status(error.status || 500).json({ 
+        success: false, 
+        message: error.message 
+      });
+    }
+  }
+
+  /**
+   * DELETE /api/auth/users/:id (admin only)
+   */
+  async deleteUser(req, res) {
+    try {
+      const { id } = req.params;
+      
+      // Não permite deletar o próprio usuário
+      if (req.user?.id === id) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Não é possível excluir o próprio usuário' 
+        });
+      }
+
+      const result = await authService.deletarUsuario(id);
+      res.json(result);
     } catch (error) {
       res.status(error.status || 500).json({ 
         success: false, 

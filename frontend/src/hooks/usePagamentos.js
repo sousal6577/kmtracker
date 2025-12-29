@@ -17,9 +17,17 @@ export function usePagamentos() {
   const carregarPagamentos = useCallback(async (mes = null, ano = null) => {
     setLoading(true);
     try {
-      const m = mes || mesSelecionado.mes;
-      const a = ano || mesSelecionado.ano;
-      const response = await pagamentoApi.listar(m, a);
+      const m = mes !== null ? mes : mesSelecionado.mes;
+      const a = ano !== null ? ano : mesSelecionado.ano;
+      
+      // Se mês for 0, significa "todos" - não passa mês/ano
+      let response;
+      if (m === 0) {
+        response = await pagamentoApi.listarTodos(a);
+      } else {
+        response = await pagamentoApi.listar(m, a);
+      }
+      
       if (response.success) {
         setPagamentos(response.pagamentos || []);
       }

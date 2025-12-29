@@ -88,6 +88,37 @@ class PagamentoServiceV2 {
   }
 
   /**
+   * Lista todos os pagamentos de um ano
+   */
+  async listarPorAno(ano) {
+    try {
+      const snapshot = await this.collection
+        .where('ano', '==', ano)
+        .get();
+      
+      // Ordena em memória por mês e nome do cliente
+      const pagamentos = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .sort((a, b) => {
+          // Primeiro ordena por mês (decrescente)
+          if (a.mes !== b.mes) return b.mes - a.mes;
+          // Depois por nome do cliente
+          return (a.clienteNome || '').localeCompare(b.clienteNome || '');
+        });
+
+      return {
+        success: true,
+        pagamentos,
+        ano,
+        total: pagamentos.length
+      };
+    } catch (error) {
+      console.error('Erro ao listar pagamentos por ano:', error);
+      throw { status: 500, message: 'Erro ao listar pagamentos' };
+    }
+  }
+
+  /**
    * Confirma pagamento
    */
   async confirmarPagamento(pagamentoId, { formaPagamento = null, valorPago = null, usuario = null } = {}) {

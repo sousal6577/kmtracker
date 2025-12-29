@@ -14,5 +14,7 @@ router.post('/logout', requireAuth, authController.logout);
 router.get('/me', requireAuth, authController.me);
 router.post('/register', requireAuth, authController.register);
 router.get('/users', requireAuth, authController.listUsers);
+router.put('/users/:id', requireAuth, authController.updateUser);
+router.delete('/users/:id', requireAuth, authController.deleteUser);
 
 export default router;

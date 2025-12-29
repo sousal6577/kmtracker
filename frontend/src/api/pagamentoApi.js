@@ -14,6 +14,16 @@ const pagamentoApi = {
   },
 
   /**
+   * Lista todos os pagamentos de um ano
+   */
+  listarTodos: async (ano = null) => {
+    const params = { todos: true };
+    if (ano) params.ano = ano;
+    const response = await api.get('/pagamentos', { params });
+    return response.data;
+  },
+
+  /**
    * Confirma pagamento
    */
   confirmar: async (pagamentoId, dados = {}) => {

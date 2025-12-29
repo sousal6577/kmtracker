@@ -7,10 +7,13 @@ class PagamentoController {
    */
   async listar(req, res) {
     try {
-      const { mes, ano } = req.query;
+      const { mes, ano, todos } = req.query;
       
       let result;
-      if (mes && ano) {
+      if (todos === 'true') {
+        // Lista todos os pagamentos do ano
+        result = await pagamentoService.listarPorAno(ano ? parseInt(ano) : new Date().getFullYear());
+      } else if (mes && ano) {
         result = await pagamentoService.listarPorMes(parseInt(mes), parseInt(ano));
       } else {
         result = await pagamentoService.listarMesAtual();

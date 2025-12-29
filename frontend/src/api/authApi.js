@@ -78,6 +78,22 @@ const authApi = {
   },
 
   /**
+   * Atualiza um usuário existente
+   */
+  updateUser: async (id, dados) => {
+    const response = await api.put(`/auth/users/${id}`, dados);
+    return response.data;
+  },
+
+  /**
+   * Exclui um usuário
+   */
+  deleteUser: async (id) => {
+    const response = await api.delete(`/auth/users/${id}`);
+    return response.data;
+  },
+
+  /**
    * Verifica se está autenticado (local)
    */
   isAuthenticated: () => {
