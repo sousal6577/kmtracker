@@ -10,7 +10,6 @@ import {
   Typography,
   Skeleton,
 } from '@mui/material';
-import { motion } from 'framer-motion';
 
 export default function DataTable({
   columns,
@@ -20,32 +19,12 @@ export default function DataTable({
   onRowClick,
   rowKey = 'id',
 }) {
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.05,
-      },
-    },
-  };
-
-  const rowVariants = {
-    hidden: { opacity: 0, x: -20 },
-    visible: { 
-      opacity: 1, 
-      x: 0,
-      transition: { duration: 0.3 }
-    },
-  };
-
   // Loading Skeleton
   if (loading) {
     return (
       <TableContainer
         sx={{
           background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)',
-          backdropFilter: 'blur(20px)',
           borderRadius: '16px',
           border: '1px solid rgba(255, 255, 255, 0.1)',
           overflow: 'hidden',
@@ -83,7 +62,6 @@ export default function DataTable({
       <Box
         sx={{
           background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)',
-          backdropFilter: 'blur(20px)',
           borderRadius: '16px',
           border: '1px solid rgba(255, 255, 255, 0.1)',
           p: 6,
@@ -99,13 +77,8 @@ export default function DataTable({
 
   return (
     <TableContainer
-      component={motion.div}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
       sx={{
         background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)',
-        backdropFilter: 'blur(20px)',
         borderRadius: '16px',
         border: '1px solid rgba(255, 255, 255, 0.1)',
         overflow: 'hidden',
@@ -139,21 +112,14 @@ export default function DataTable({
             ))}
           </TableRow>
         </TableHead>
-        <TableBody
-          component={motion.tbody}
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-        >
+        <TableBody>
           {data.map((row, rowIdx) => (
             <TableRow
               key={row[rowKey] || rowIdx}
-              component={motion.tr}
-              variants={rowVariants}
               onClick={() => onRowClick && onRowClick(row)}
               sx={{
                 cursor: onRowClick ? 'pointer' : 'default',
-                transition: 'all 0.2s ease',
+                transition: 'background-color 0.15s ease',
                 '&:hover': {
                   backgroundColor: 'rgba(99, 102, 241, 0.08)',
                 },
@@ -172,8 +138,8 @@ export default function DataTable({
                   }}
                 >
                   {column.render 
-                    ? column.render(row[column.field], row, rowIdx)
-                    : row[column.field] || '-'
+                    ? column.render(row)
+                    : row[column.field || column.id] || '-'
                   }
                 </TableCell>
               ))}

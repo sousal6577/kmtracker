@@ -1,26 +1,27 @@
-// src/components/ui/VehicleIcon.jsx - Ícones de Veículos Animados
+// src/components/ui/VehicleIcon.jsx - Ícones de Veículos com Font Awesome
 import { Box, Tooltip } from '@mui/material';
-import { motion } from 'framer-motion';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-  DirectionsCar,
-  TwoWheeler,
-  LocalShipping,
-  AirportShuttle,
-  Agriculture,
-  ElectricCar,
-  Motorcycle,
-  DirectionsBus,
-} from '@mui/icons-material';
+  faCar,
+  faMotorcycle,
+  faTruck,
+  faVanShuttle,
+  faTractor,
+  faChargingStation,
+  faBus,
+  faBicycle,
+} from '@fortawesome/free-solid-svg-icons';
 
 const vehicleIcons = {
-  carro: { icon: DirectionsCar, label: 'Carro', color: '#6366f1' },
-  moto: { icon: TwoWheeler, label: 'Moto', color: '#f97316' },
-  caminhao: { icon: LocalShipping, label: 'Caminhão', color: '#10b981' },
-  van: { icon: AirportShuttle, label: 'Van', color: '#06b6d4' },
-  trator: { icon: Agriculture, label: 'Trator', color: '#84cc16' },
-  eletrico: { icon: ElectricCar, label: 'Elétrico', color: '#22d3ee' },
-  motocicleta: { icon: Motorcycle, label: 'Motocicleta', color: '#ec4899' },
-  onibus: { icon: DirectionsBus, label: 'Ônibus', color: '#8b5cf6' },
+  carro: { icon: faCar, label: 'Carro', color: '#6366f1' },
+  moto: { icon: faMotorcycle, label: 'Moto', color: '#f97316' },
+  caminhao: { icon: faTruck, label: 'Caminhão', color: '#10b981' },
+  van: { icon: faVanShuttle, label: 'Van', color: '#06b6d4' },
+  trator: { icon: faTractor, label: 'Trator', color: '#84cc16' },
+  eletrico: { icon: faChargingStation, label: 'Elétrico', color: '#22d3ee' },
+  motocicleta: { icon: faMotorcycle, label: 'Motocicleta', color: '#ec4899' },
+  onibus: { icon: faBus, label: 'Ônibus', color: '#8b5cf6' },
+  bicicleta: { icon: faBicycle, label: 'Bicicleta', color: '#14b8a6' },
 };
 
 export default function VehicleIcon({ 
@@ -30,79 +31,84 @@ export default function VehicleIcon({
   onClick,
   showLabel = false,
 }) {
-  const vehicle = vehicleIcons[type.toLowerCase()] || vehicleIcons.carro;
-  const IconComponent = vehicle.icon;
+  const vehicle = vehicleIcons[(type || 'carro').toLowerCase()] || vehicleIcons.carro;
 
   const sizes = {
-    small: { box: 36, icon: 20 },
-    medium: { box: 48, icon: 26 },
-    large: { box: 64, icon: 34 },
+    small: { box: 36, icon: 16 },
+    medium: { box: 48, icon: 20 },
+    large: { box: 64, icon: 28 },
   };
 
-  const { box, icon } = sizes[size];
+  // Aceita número direto ou string predefinida
+  const sizeConfig = typeof size === 'number' 
+    ? { box: size + 12, icon: size }
+    : (sizes[size] || sizes.medium);
+  
+  const { box, icon } = sizeConfig;
 
   return (
     <Tooltip title={vehicle.label} arrow placement="top">
-      <motion.div
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.95 }}
+      <Box
         onClick={onClick}
-        style={{ cursor: onClick ? 'pointer' : 'default' }}
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 0.5,
+          cursor: onClick ? 'pointer' : 'default',
+          '&:hover .vehicle-box': {
+            background: `linear-gradient(135deg, ${vehicle.color}30, ${vehicle.color}15)`,
+            borderColor: vehicle.color,
+            transform: 'scale(1.05)',
+          },
+          '&:active .vehicle-box': {
+            transform: 'scale(0.95)',
+          },
+        }}
       >
         <Box
+          className="vehicle-box"
           sx={{
+            width: box,
+            height: box,
+            borderRadius: '14px',
+            background: selected
+              ? `linear-gradient(135deg, ${vehicle.color}40, ${vehicle.color}20)`
+              : 'rgba(255, 255, 255, 0.05)',
+            border: selected
+              ? `2px solid ${vehicle.color}`
+              : '1px solid rgba(255, 255, 255, 0.1)',
             display: 'flex',
-            flexDirection: 'column',
             alignItems: 'center',
-            gap: 0.5,
+            justifyContent: 'center',
+            transition: 'all 0.15s ease',
+            boxShadow: selected
+              ? `0 0 20px ${vehicle.color}40`
+              : 'none',
           }}
         >
+          <FontAwesomeIcon
+            icon={vehicle.icon}
+            style={{
+              fontSize: icon,
+              color: selected ? vehicle.color : 'rgba(255,255,255,0.6)',
+              transition: 'color 0.15s ease',
+            }}
+          />
+        </Box>
+        {showLabel && (
           <Box
+            component="span"
             sx={{
-              width: box,
-              height: box,
-              borderRadius: '14px',
-              background: selected
-                ? `linear-gradient(135deg, ${vehicle.color}40, ${vehicle.color}20)`
-                : 'rgba(255, 255, 255, 0.05)',
-              border: selected
-                ? `2px solid ${vehicle.color}`
-                : '1px solid rgba(255, 255, 255, 0.1)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 0.2s ease',
-              boxShadow: selected
-                ? `0 0 20px ${vehicle.color}40`
-                : 'none',
-              '&:hover': {
-                background: `linear-gradient(135deg, ${vehicle.color}30, ${vehicle.color}15)`,
-                borderColor: vehicle.color,
-              },
+              fontSize: '0.7rem',
+              color: selected ? vehicle.color : 'text.secondary',
+              fontWeight: selected ? 600 : 400,
             }}
           >
-            <IconComponent
-              sx={{
-                fontSize: icon,
-                color: selected ? vehicle.color : 'text.secondary',
-                transition: 'color 0.2s ease',
-              }}
-            />
+            {vehicle.label}
           </Box>
-          {showLabel && (
-            <Box
-              component="span"
-              sx={{
-                fontSize: '0.7rem',
-                color: selected ? vehicle.color : 'text.secondary',
-                fontWeight: selected ? 600 : 400,
-              }}
-            >
-              {vehicle.label}
-            </Box>
-          )}
-        </Box>
-      </motion.div>
+        )}
+      </Box>
     </Tooltip>
   );
 }

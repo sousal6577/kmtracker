@@ -1,6 +1,5 @@
-// src/components/ui/StatusBadge.jsx - Badge de Status Animado
-import { Chip, Box } from '@mui/material';
-import { motion } from 'framer-motion';
+// src/components/ui/StatusBadge.jsx - Badge de Status
+import { Chip } from '@mui/material';
 import { CheckCircle, Warning, Error, Schedule, LocalShipping } from '@mui/icons-material';
 
 const statusConfig = {
@@ -45,35 +44,29 @@ export default function StatusBadge({ status, size = 'small', pulse = false }) {
   const config = statusConfig[status?.toUpperCase()] || statusConfig.PENDENTE;
 
   return (
-    <motion.div
-      initial={{ scale: 0.8, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ duration: 0.3 }}
-    >
-      <Chip
-        icon={config.icon}
-        label={status}
-        size={size}
-        sx={{
-          background: config.bg,
+    <Chip
+      icon={config.icon}
+      label={status}
+      size={size}
+      sx={{
+        background: config.bg,
+        color: config.textColor,
+        border: `1px solid ${config.borderColor}`,
+        fontWeight: 600,
+        fontSize: '0.7rem',
+        letterSpacing: '0.5px',
+        textTransform: 'uppercase',
+        '& .MuiChip-icon': {
           color: config.textColor,
-          border: `1px solid ${config.borderColor}`,
-          fontWeight: 600,
-          fontSize: '0.7rem',
-          letterSpacing: '0.5px',
-          textTransform: 'uppercase',
-          '& .MuiChip-icon': {
-            color: config.textColor,
+        },
+        ...(pulse && {
+          animation: 'pulse 2s infinite',
+          '@keyframes pulse': {
+            '0%, 100%': { opacity: 1 },
+            '50%': { opacity: 0.7 },
           },
-          ...(pulse && {
-            animation: 'pulse 2s infinite',
-            '@keyframes pulse': {
-              '0%, 100%': { opacity: 1 },
-              '50%': { opacity: 0.7 },
-            },
-          }),
-        }}
-      />
-    </motion.div>
+        }),
+      }}
+    />
   );
 }

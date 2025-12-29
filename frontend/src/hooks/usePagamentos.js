@@ -1,40 +1,70 @@
 // src/hooks/usePagamentos.js - Hook para gerenciar pagamentos
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { pagamentoApi } from '../api';
 import toast from 'react-hot-toast';
 
 export function usePagamentos() {
+  const [pagamentos, setPagamentos] = useState([]);
   const [atrasados, setAtrasados] = useState([]);
   const [resumo, setResumo] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [mesSelecionado, setMesSelecionado] = useState(() => {
+    const agora = new Date();
+    return { mes: agora.getMonth() + 1, ano: agora.getFullYear() };
+  });
+
+  // Carrega pagamentos do mês
+  const carregarPagamentos = useCallback(async (mes = null, ano = null) => {
+    setLoading(true);
+    try {
+      const m = mes || mesSelecionado.mes;
+      const a = ano || mesSelecionado.ano;
+      const response = await pagamentoApi.listar(m, a);
+      if (response.success) {
+        setPagamentos(response.pagamentos || []);
+      }
+    } catch (err) {
+      toast.error('Erro ao carregar pagamentos');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [mesSelecionado]);
+
+  // Muda mês selecionado
+  const mudarMes = useCallback((mes, ano) => {
+    setMesSelecionado({ mes, ano });
+  }, []);
 
   // Confirma pagamento
-  const confirmarPagamento = useCallback(async (cpf, veiculoId) => {
+  const confirmarPagamento = useCallback(async (pagamentoId, dados = {}) => {
     try {
-      const response = await pagamentoApi.confirmar(cpf, veiculoId);
+      const response = await pagamentoApi.confirmar(pagamentoId, dados);
       if (response.success) {
         toast.success('Pagamento confirmado!');
+        await carregarPagamentos();
       }
       return response;
     } catch (err) {
       toast.error(err.response?.data?.message || 'Erro ao confirmar pagamento');
       throw err;
     }
-  }, []);
+  }, [carregarPagamentos]);
 
   // Marca como pendente
-  const marcarPendente = useCallback(async (cpf, veiculoId) => {
+  const marcarPendente = useCallback(async (pagamentoId) => {
     try {
-      const response = await pagamentoApi.marcarPendente(cpf, veiculoId);
+      const response = await pagamentoApi.marcarPendente(pagamentoId);
       if (response.success) {
         toast.success('Marcado como pendente');
+        await carregarPagamentos();
       }
       return response;
     } catch (err) {
       toast.error(err.response?.data?.message || 'Erro ao marcar pendente');
       throw err;
     }
-  }, []);
+  }, [carregarPagamentos]);
 
   // Carrega atrasados
   const carregarAtrasados = useCallback(async () => {
@@ -68,7 +98,7 @@ export function usePagamentos() {
 
   // Inicia novo mês
   const iniciarNovoMes = useCallback(async () => {
-    if (!confirm('Iniciar novo mês? Todos os status serão resetados para PENDENTE.')) {
+    if (!confirm('Iniciar novo mês? Pagamentos pendentes serão criados para todos os veículos ativos.')) {
       return;
     }
     
@@ -76,18 +106,28 @@ export function usePagamentos() {
       const response = await pagamentoApi.iniciarNovoMes();
       if (response.success) {
         toast.success('Novo mês iniciado!');
+        await carregarPagamentos();
       }
       return response;
     } catch (err) {
       toast.error(err.response?.data?.message || 'Erro ao iniciar novo mês');
       throw err;
     }
-  }, []);
+  }, [carregarPagamentos]);
+
+  // Carrega pagamentos ao mudar mês
+  useEffect(() => {
+    carregarPagamentos();
+  }, [mesSelecionado, carregarPagamentos]);
 
   return {
+    pagamentos,
     atrasados,
     resumo,
     loading,
+    mesSelecionado,
+    mudarMes,
+    carregarPagamentos,
     confirmarPagamento,
     marcarPendente,
     carregarAtrasados,

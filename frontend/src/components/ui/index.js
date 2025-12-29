@@ -11,3 +11,5 @@ export { default as DataTable } from './DataTable';
 export { default as EmptyState } from './EmptyState';
 export { default as SearchInput } from './SearchInput';
 export { default as ConfirmDialog } from './ConfirmDialog';
+export { default as ResponsiveDataView } from './ResponsiveDataView';
+export { default as LoadingOverlay } from './LoadingOverlay';

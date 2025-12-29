@@ -1,11 +1,10 @@
-// src/components/ui/GlassCard.jsx - Card com efeito Glassmorphism
+// src/components/ui/GlassCard.jsx - Card com efeito Glassmorphism (Otimizado)
 import { Box } from '@mui/material';
-import { motion } from 'framer-motion';
 
 export default function GlassCard({ 
   children, 
   variant = 'default',
-  hover = true,
+  hover = false,
   glow = false,
   padding = 3,
   ...props 
@@ -33,44 +32,19 @@ export default function GlassCard({
     },
   };
 
-  const cardVariants = {
-    initial: { opacity: 0, y: 20 },
-    animate: { 
-      opacity: 1, 
-      y: 0,
-      transition: { duration: 0.4, ease: 'easeOut' }
-    },
-    hover: hover ? { 
-      y: -4,
-      boxShadow: glow 
-        ? '0 20px 40px rgba(0, 0, 0, 0.3), 0 0 30px rgba(99, 102, 241, 0.2)'
-        : '0 20px 40px rgba(0, 0, 0, 0.3)',
-      borderColor: 'rgba(99, 102, 241, 0.3)',
-      transition: { duration: 0.2 }
-    } : {},
-  };
-
   return (
-    <motion.div
-      initial="initial"
-      animate="animate"
-      whileHover="hover"
-      variants={cardVariants}
+    <Box
+      sx={{
+        ...variants[variant],
+        backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
+        borderRadius: '16px',
+        padding,
+        ...props.sx,
+      }}
+      {...props}
     >
-      <Box
-        sx={{
-          ...variants[variant],
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
-          borderRadius: '16px',
-          padding,
-          transition: 'all 0.3s ease',
-          ...props.sx,
-        }}
-        {...props}
-      >
-        {children}
-      </Box>
-    </motion.div>
+      {children}
+    </Box>
   );
 }

@@ -1,50 +1,221 @@
-// src/pages/DashboardPage.jsx - Dashboard Moderno com Glassmorphism
+// src/pages/DashboardPage.jsx - Dashboard Moderno e Responsivo para Mobile
 import { useState, useEffect } from 'react';
 import {
   Box,
   Grid,
   Typography,
-  Avatar,
-  List,
-  ListItem,
-  ListItemAvatar,
-  ListItemText,
   Chip,
   IconButton,
   Tooltip,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   People,
   DirectionsCar,
-  AttachMoney,
   Warning,
   CheckCircle,
   Schedule,
   Refresh,
   ArrowForward,
   Speed,
+  TrendingUp,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clienteApi, pagamentoApi } from '../api';
-import { GlassCard, StatsCard } from '../components/ui';
+import { GlassCard, VehicleIcon } from '../components/ui';
 import Loading from '../components/common/Loading';
+import { useNavigate } from 'react-router-dom';
 
+// Animações simplificadas para melhor performance
 const containerVariants = {
   hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
+  visible: { opacity: 1 },
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0 },
+  hidden: { opacity: 0 },
+  visible: { opacity: 1 },
 };
 
+// Cores por tipo de veículo
+const VEHICLE_COLORS = {
+  moto: { bg: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', gradient: 'linear-gradient(135deg, #ef4444 0%, #f97316 100%)' },
+  carro: { bg: 'rgba(99, 102, 241, 0.15)', color: '#6366f1', gradient: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)' },
+  caminhao: { bg: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', gradient: 'linear-gradient(135deg, #22c55e 0%, #10b981 100%)' },
+  van: { bg: 'rgba(234, 179, 8, 0.15)', color: '#eab308', gradient: 'linear-gradient(135deg, #eab308 0%, #f59e0b 100%)' },
+  trator: { bg: 'rgba(139, 92, 246, 0.15)', color: '#8b5cf6', gradient: 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%)' },
+  onibus: { bg: 'rgba(14, 165, 233, 0.15)', color: '#0ea5e9', gradient: 'linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%)' },
+};
+
+// Card de Estatística Compacto para Mobile
+function MiniStatsCard({ title, value, icon, color = '#6366f1', subtitle }) {
+  return (
+    <GlassCard
+      sx={{
+        p: { xs: 1.5, sm: 2 },
+        height: '100%',
+        position: 'relative',
+        overflow: 'hidden',
+        borderLeft: `3px solid ${color}`,
+      }}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <Box sx={{ flex: 1 }}>
+          <Typography
+            sx={{
+              color: 'text.secondary',
+              fontSize: { xs: '0.65rem', sm: '0.75rem' },
+              fontWeight: 500,
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
+            }}
+          >
+            {title}
+          </Typography>
+          <Typography
+            sx={{
+              fontWeight: 800,
+              fontSize: { xs: '1.25rem', sm: '1.5rem' },
+              color: color,
+              lineHeight: 1.2,
+              mt: 0.5,
+            }}
+          >
+            {value}
+          </Typography>
+          {subtitle && (
+            <Typography sx={{ color: 'text.secondary', fontSize: { xs: '0.55rem', sm: '0.65rem' }, mt: 0.25 }}>
+              {subtitle}
+            </Typography>
+          )}
+        </Box>
+        <Box
+          sx={{
+            p: { xs: 0.75, sm: 1 },
+            borderRadius: '10px',
+            backgroundColor: `${color}15`,
+            color: color,
+            display: 'flex',
+          }}
+        >
+          {icon}
+        </Box>
+      </Box>
+    </GlassCard>
+  );
+}
+
+// Card de Veículo Atrasado Compacto
+function AtrasadoCard({ veiculo, onClick }) {
+  const vehicleColor = VEHICLE_COLORS[veiculo.tipoVeiculo] || VEHICLE_COLORS.carro;
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  return (
+    <motion.div variants={itemVariants} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
+      <Box
+        onClick={onClick}
+        sx={{
+          p: { xs: 1.25, sm: 1.5 },
+          mb: 1,
+          borderRadius: '10px',
+          backgroundColor: 'rgba(239, 68, 68, 0.08)',
+          border: '1px solid rgba(239, 68, 68, 0.15)',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1.5,
+          transition: 'all 0.2s ease',
+          '&:hover': {
+            backgroundColor: 'rgba(239, 68, 68, 0.12)',
+            borderColor: 'rgba(239, 68, 68, 0.25)',
+          },
+        }}
+      >
+        <Box
+          sx={{
+            p: 0.6,
+            borderRadius: '8px',
+            background: vehicleColor.gradient,
+            display: 'flex',
+          }}
+        >
+          <VehicleIcon type={veiculo.tipoVeiculo || 'carro'} size={isMobile ? 16 : 20} color="#fff" />
+        </Box>
+        
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.85rem' } }} noWrap>
+            {veiculo.clienteNome || veiculo.nome || veiculo.cliente || 'Cliente'}
+          </Typography>
+          <Typography sx={{ color: 'text.secondary', fontSize: { xs: '0.6rem', sm: '0.7rem' } }} noWrap>
+            {veiculo.placa || veiculo.n_placa} • {veiculo.modelo || veiculo.veiculo}
+          </Typography>
+        </Box>
+
+        <Chip
+          label={`R$ ${parseFloat(veiculo.valor || 55).toFixed(0)}`}
+          size="small"
+          sx={{
+            backgroundColor: 'rgba(239, 68, 68, 0.15)',
+            color: '#ef4444',
+            fontWeight: 600,
+            fontSize: { xs: '0.6rem', sm: '0.7rem' },
+            height: { xs: 20, sm: 24 },
+          }}
+        />
+      </Box>
+    </motion.div>
+  );
+}
+
+// Card de Pagamento Recente Compacto
+function PagamentoRecenteCard({ pagamento }) {
+  return (
+    <Box
+      sx={{
+        p: { xs: 1.25, sm: 1.5 },
+        mb: 1,
+        borderRadius: '10px',
+        backgroundColor: 'rgba(34, 197, 94, 0.08)',
+        border: '1px solid rgba(34, 197, 94, 0.15)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1.5,
+      }}
+    >
+      <Box
+        sx={{
+          p: 0.6,
+          borderRadius: '8px',
+          backgroundColor: 'rgba(34, 197, 94, 0.2)',
+          display: 'flex',
+        }}
+      >
+        <CheckCircle sx={{ fontSize: { xs: 16, sm: 20 }, color: '#22c55e' }} />
+      </Box>
+      
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Typography sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.85rem' } }} noWrap>
+          {pagamento.clienteNome || 'Cliente'}
+        </Typography>
+        <Typography sx={{ color: 'text.secondary', fontSize: { xs: '0.6rem', sm: '0.7rem' } }} noWrap>
+          {pagamento.placa} • {pagamento.modelo}
+        </Typography>
+      </Box>
+
+      <Typography sx={{ color: '#22c55e', fontWeight: 700, fontSize: { xs: '0.8rem', sm: '0.9rem' } }}>
+        R$ {parseFloat(pagamento.valorPago || pagamento.valor || 0).toFixed(0)}
+      </Typography>
+    </Box>
+  );
+}
+
 export default function DashboardPage() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const navigate = useNavigate();
+  
   const [stats, setStats] = useState(null);
   const [atrasados, setAtrasados] = useState([]);
   const [recentPagamentos, setRecentPagamentos] = useState([]);
@@ -60,6 +231,10 @@ export default function DashboardPage() {
         pagamentoApi.listarAtrasados(),
         pagamentoApi.listar(),
       ]);
+      
+      console.log('Stats:', statsRes);
+      console.log('Atrasados:', atrasadosRes);
+      console.log('Pagamentos:', pagamentosRes);
       
       if (statsRes.success) setStats(statsRes.estatisticas);
       if (atrasadosRes.success) setAtrasados(atrasadosRes.atrasados || []);
@@ -83,34 +258,38 @@ export default function DashboardPage() {
 
   if (loading) return <Loading />;
 
-  const taxaPagamento = stats?.totalClientes 
-    ? Math.round((stats.pagos / stats.totalClientes) * 100) 
-    : 0;
+  // Valores seguros com fallback para 0
+  const totalClientes = stats?.totalClientes || 0;
+  const totalVeiculos = stats?.totalVeiculos || 0;
+  const mesAtual = stats?.mesAtual || {};
+  const pagos = mesAtual.pagos || 0;
+  const pendentes = mesAtual.pendentes || 0;
+  const atrasadosCount = mesAtual.atrasados || atrasados.length || 0;
+  const totalPagamentos = pagos + pendentes + atrasadosCount;
+  const taxaPagamento = totalPagamentos > 0 ? Math.round((pagos / totalPagamentos) * 100) : 0;
+  
+  // Valores financeiros reais
+  const valorTotalEsperado = mesAtual.totalValor || 0;
+  const valorRecebido = mesAtual.totalPago || 0;
+  const valorPendente = valorTotalEsperado - valorRecebido;
 
   return (
-    <Box
-      component={motion.div}
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-    >
-      {/* Header */}
+    <Box component={motion.div} variants={containerVariants} initial="hidden" animate="visible">
+      {/* Header Compacto */}
       <Box
         sx={{
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: { xs: 'flex-start', md: 'center' },
-          flexDirection: { xs: 'column', md: 'row' },
-          mb: 4,
-          gap: 2,
+          alignItems: 'center',
+          mb: { xs: 2, sm: 3 },
         }}
       >
         <Box>
           <motion.div variants={itemVariants}>
             <Typography
-              variant="h4"
               sx={{
                 fontWeight: 800,
+                fontSize: { xs: '1.25rem', sm: '1.5rem' },
                 background: 'linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.7) 100%)',
                 backgroundClip: 'text',
                 WebkitBackgroundClip: 'text',
@@ -121,17 +300,18 @@ export default function DashboardPage() {
             </Typography>
           </motion.div>
           <motion.div variants={itemVariants}>
-            <Typography color="text.secondary" sx={{ mt: 0.5 }}>
-              Bem-vindo! Aqui está o resumo do seu sistema.
+            <Typography color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.85rem' } }}>
+              Resumo do sistema
             </Typography>
           </motion.div>
         </Box>
         
         <motion.div variants={itemVariants}>
-          <Tooltip title="Atualizar dados">
+          <Tooltip title="Atualizar">
             <IconButton
               onClick={() => loadData(true)}
               disabled={refreshing}
+              size="small"
               sx={{
                 backgroundColor: 'rgba(99, 102, 241, 0.1)',
                 '&:hover': { backgroundColor: 'rgba(99, 102, 241, 0.2)' },
@@ -139,11 +319,9 @@ export default function DashboardPage() {
             >
               <Refresh
                 sx={{
+                  fontSize: { xs: 18, sm: 22 },
                   animation: refreshing ? 'spin 1s linear infinite' : 'none',
-                  '@keyframes spin': {
-                    '0%': { transform: 'rotate(0deg)' },
-                    '100%': { transform: 'rotate(360deg)' },
-                  },
+                  '@keyframes spin': { '0%': { transform: 'rotate(0deg)' }, '100%': { transform: 'rotate(360deg)' } },
                 }}
               />
             </IconButton>
@@ -151,307 +329,150 @@ export default function DashboardPage() {
         </motion.div>
       </Box>
 
-      {/* Stats Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} lg={3}>
+      {/* Stats Cards - Grid 2x2 no Mobile */}
+      <Grid container spacing={{ xs: 1.5, sm: 2 }} sx={{ mb: { xs: 2, sm: 3 } }}>
+        <Grid item xs={6} lg={3}>
           <motion.div variants={itemVariants}>
-            <StatsCard
-              title="Total de Clientes"
-              value={stats?.totalClientes || 0}
-              icon={<People />}
-              trend={5}
-              subtitle="ativos no sistema"
-            />
-          </motion.div>
-        </Grid>
-        <Grid item xs={12} sm={6} lg={3}>
-          <motion.div variants={itemVariants}>
-            <StatsCard
-              title="Veículos Rastreados"
-              value={stats?.totalVeiculos || 0}
-              icon={<DirectionsCar />}
-              trend={8}
-              subtitle="em monitoramento"
+            <MiniStatsCard
+              title="Clientes"
+              value={totalClientes}
+              icon={<People sx={{ fontSize: { xs: 18, sm: 22 } }} />}
               color="#6366f1"
+              subtitle="ativos"
             />
           </motion.div>
         </Grid>
-        <Grid item xs={12} sm={6} lg={3}>
+        <Grid item xs={6} lg={3}>
           <motion.div variants={itemVariants}>
-            <StatsCard
-              title="Pagamentos Recebidos"
-              value={stats?.pagos || 0}
-              icon={<AttachMoney />}
-              trend={12}
-              subtitle="este mês"
+            <MiniStatsCard
+              title="Veículos"
+              value={totalVeiculos}
+              icon={<DirectionsCar sx={{ fontSize: { xs: 18, sm: 22 } }} />}
+              color="#8b5cf6"
+              subtitle="rastreados"
+            />
+          </motion.div>
+        </Grid>
+        <Grid item xs={6} lg={3}>
+          <motion.div variants={itemVariants}>
+            <MiniStatsCard
+              title="Pagos"
+              value={pagos}
+              icon={<CheckCircle sx={{ fontSize: { xs: 18, sm: 22 } }} />}
               color="#22c55e"
+              subtitle="este mês"
             />
           </motion.div>
         </Grid>
-        <Grid item xs={12} sm={6} lg={3}>
+        <Grid item xs={6} lg={3}>
           <motion.div variants={itemVariants}>
-            <StatsCard
-              title="Pagamentos Atrasados"
+            <MiniStatsCard
+              title="Atrasados"
               value={atrasados.length}
-              icon={<Warning />}
-              trend={atrasados.length > 0 ? -5 : 0}
-              subtitle="precisam de atenção"
+              icon={<Warning sx={{ fontSize: { xs: 18, sm: 22 } }} />}
               color="#ef4444"
+              subtitle="pendentes"
             />
           </motion.div>
         </Grid>
       </Grid>
 
-      {/* Conteúdo Principal */}
-      <Grid container spacing={3}>
-        {/* Taxa de Pagamento */}
-        <Grid item xs={12} lg={4}>
-          <motion.div variants={itemVariants}>
-            <GlassCard
+      {/* Taxa de Pagamento - Card Compacto */}
+      <motion.div variants={itemVariants}>
+        <GlassCard sx={{ p: { xs: 2, sm: 2.5 }, mb: { xs: 2, sm: 3 } }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Speed sx={{ color: '#6366f1', fontSize: { xs: 20, sm: 24 } }} />
+              <Typography sx={{ fontWeight: 600, fontSize: { xs: '0.9rem', sm: '1rem' } }}>
+                Taxa de Pagamento
+              </Typography>
+            </Box>
+            <Typography sx={{ fontWeight: 800, fontSize: { xs: '1.5rem', sm: '2rem' }, color: '#22c55e' }}>
+              {taxaPagamento}%
+            </Typography>
+          </Box>
+          
+          {/* Barra de Progresso */}
+          <Box sx={{ mt: 2 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+              <Typography sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' }, color: 'text.secondary' }}>
+                {pagos} pagos
+              </Typography>
+              <Typography sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' }, color: 'text.secondary' }}>
+                {totalPagamentos} total
+              </Typography>
+            </Box>
+            <Box
               sx={{
-                p: 3,
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
+                height: { xs: 6, sm: 8 },
+                borderRadius: 4,
+                backgroundColor: 'rgba(255,255,255,0.1)',
+                overflow: 'hidden',
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                <Speed sx={{ color: 'primary.main', mr: 1 }} />
-                <Typography variant="h6" fontWeight={600}>
-                  Taxa de Pagamento
-                </Typography>
-              </Box>
-
               <Box
                 sx={{
-                  flex: 1,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'center',
-                  alignItems: 'center',
+                  width: `${taxaPagamento}%`,
+                  height: '100%',
+                  borderRadius: 4,
+                  background: 'linear-gradient(90deg, #22c55e 0%, #10b981 100%)',
+                  transition: 'width 0.5s ease',
                 }}
-              >
-                <Box
-                  sx={{
-                    position: 'relative',
-                    width: 160,
-                    height: 160,
-                    mb: 2,
-                  }}
-                >
-                  {/* Background Circle */}
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      inset: 0,
-                      borderRadius: '50%',
-                      border: '12px solid rgba(255,255,255,0.05)',
-                    }}
-                  />
-                  {/* Progress Circle */}
-                  <Box
-                    component={motion.div}
-                    initial={{ rotate: -90 }}
-                    animate={{ rotate: -90 }}
-                    sx={{
-                      position: 'absolute',
-                      inset: 0,
-                      borderRadius: '50%',
-                      background: `conic-gradient(
-                        #6366f1 ${taxaPagamento * 3.6}deg,
-                        transparent ${taxaPagamento * 3.6}deg
-                      )`,
-                      mask: 'radial-gradient(farthest-side, transparent calc(100% - 12px), black calc(100% - 12px))',
-                      WebkitMask: 'radial-gradient(farthest-side, transparent calc(100% - 12px), black calc(100% - 12px))',
-                    }}
-                  />
-                  {/* Center Content */}
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      inset: 0,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Typography
-                      variant="h3"
-                      sx={{
-                        fontWeight: 800,
-                        background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
-                        backgroundClip: 'text',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                      }}
-                    >
-                      {taxaPagamento}%
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      em dia
-                    </Typography>
-                  </Box>
-                </Box>
+              />
+            </Box>
+          </Box>
+        </GlassCard>
+      </motion.div>
 
-                <Box sx={{ display: 'flex', gap: 3, mt: 2 }}>
-                  <Box sx={{ textAlign: 'center' }}>
-                    <Chip
-                      icon={<CheckCircle />}
-                      label={stats?.pagos || 0}
-                      size="small"
-                      sx={{
-                        backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                        color: '#22c55e',
-                        '& .MuiChip-icon': { color: '#22c55e' },
-                      }}
-                    />
-                    <Typography variant="caption" display="block" color="text.secondary" mt={0.5}>
-                      Pagos
-                    </Typography>
-                  </Box>
-                  <Box sx={{ textAlign: 'center' }}>
-                    <Chip
-                      icon={<Schedule />}
-                      label={stats?.pendentes || 0}
-                      size="small"
-                      sx={{
-                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                        color: '#f59e0b',
-                        '& .MuiChip-icon': { color: '#f59e0b' },
-                      }}
-                    />
-                    <Typography variant="caption" display="block" color="text.secondary" mt={0.5}>
-                      Pendentes
-                    </Typography>
-                  </Box>
-                </Box>
-              </Box>
-            </GlassCard>
-          </motion.div>
-        </Grid>
-
-        {/* Pagamentos Atrasados */}
-        <Grid item xs={12} lg={8}>
+      {/* Grid Principal */}
+      <Grid container spacing={{ xs: 1.5, sm: 2 }}>
+        {/* Atrasados */}
+        <Grid item xs={12} md={6}>
           <motion.div variants={itemVariants}>
-            <GlassCard
-              variant={atrasados.length > 0 ? 'danger' : 'default'}
-              sx={{ p: 3, height: '100%' }}
-            >
-              <Box
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  mb: 2,
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <Warning sx={{ color: atrasados.length > 0 ? '#ef4444' : 'text.secondary', mr: 1 }} />
-                  <Typography variant="h6" fontWeight={600}>
-                    Pagamentos Atrasados
+            <GlassCard sx={{ p: { xs: 1.5, sm: 2 }, height: '100%' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Warning sx={{ color: '#ef4444', fontSize: { xs: 18, sm: 20 } }} />
+                  <Typography sx={{ fontWeight: 600, fontSize: { xs: '0.85rem', sm: '1rem' } }}>
+                    Atrasados ({atrasados.length})
                   </Typography>
                 </Box>
-                {atrasados.length > 0 && (
-                  <Chip
-                    label={`${atrasados.length} pendências`}
-                    size="small"
-                    sx={{
-                      backgroundColor: 'rgba(239, 68, 68, 0.2)',
-                      color: '#ef4444',
-                      fontWeight: 600,
-                    }}
-                  />
-                )}
+                <IconButton size="small" onClick={() => navigate('/pagamentos')}>
+                  <ArrowForward sx={{ fontSize: 16 }} />
+                </IconButton>
               </Box>
 
               {atrasados.length > 0 ? (
-                <List sx={{ py: 0 }}>
+                <Box sx={{ maxHeight: { xs: 200, sm: 280 }, overflow: 'auto' }}>
                   <AnimatePresence>
-                    {atrasados.slice(0, 5).map((item, idx) => (
-                      <motion.div
-                        key={idx}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: idx * 0.1 }}
-                      >
-                        <ListItem
-                          sx={{
-                            px: 2,
-                            py: 1.5,
-                            borderRadius: '12px',
-                            mb: 1,
-                            backgroundColor: 'rgba(239, 68, 68, 0.05)',
-                            border: '1px solid rgba(239, 68, 68, 0.1)',
-                            '&:hover': {
-                              backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                            },
-                          }}
-                          secondaryAction={
-                            <IconButton edge="end" size="small">
-                              <ArrowForward fontSize="small" />
-                            </IconButton>
-                          }
-                        >
-                          <ListItemAvatar>
-                            <Avatar
-                              sx={{
-                                backgroundColor: 'rgba(239, 68, 68, 0.2)',
-                                color: '#ef4444',
-                              }}
-                            >
-                              {item.nome?.charAt(0) || 'C'}
-                            </Avatar>
-                          </ListItemAvatar>
-                          <ListItemText
-                            primary={
-                              <Typography fontWeight={600}>{item.nome}</Typography>
-                            }
-                            secondary={
-                              <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
-                                <Chip
-                                  label={item.n_placa}
-                                  size="small"
-                                  sx={{
-                                    height: 20,
-                                    fontSize: '0.7rem',
-                                    backgroundColor: 'rgba(255,255,255,0.1)',
-                                  }}
-                                />
-                                <Typography variant="caption" color="text.secondary">
-                                  {item.veiculo}
-                                </Typography>
-                              </Box>
-                            }
-                          />
-                        </ListItem>
-                      </motion.div>
+                    {atrasados.slice(0, 5).map((v, i) => (
+                      <AtrasadoCard
+                        key={v.id || i}
+                        veiculo={v}
+                        onClick={() => navigate('/pagamentos')}
+                      />
                     ))}
                   </AnimatePresence>
                   {atrasados.length > 5 && (
-                    <Box sx={{ textAlign: 'center', mt: 2 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        + {atrasados.length - 5} mais atrasados
-                      </Typography>
-                    </Box>
+                    <Typography
+                      sx={{
+                        textAlign: 'center',
+                        fontSize: '0.7rem',
+                        color: 'primary.main',
+                        cursor: 'pointer',
+                        mt: 1,
+                      }}
+                      onClick={() => navigate('/pagamentos')}
+                    >
+                      Ver todos ({atrasados.length})
+                    </Typography>
                   )}
-                </List>
+                </Box>
               ) : (
-                <Box
-                  sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    py: 4,
-                  }}
-                >
-                  <CheckCircle sx={{ fontSize: 48, color: '#22c55e', mb: 2 }} />
-                  <Typography variant="h6" fontWeight={600} color="#22c55e">
-                    Tudo em dia!
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Nenhum pagamento atrasado no momento
+                <Box sx={{ textAlign: 'center', py: 3 }}>
+                  <CheckCircle sx={{ fontSize: 32, color: '#22c55e', mb: 1 }} />
+                  <Typography sx={{ fontSize: '0.8rem', color: 'text.secondary' }}>
+                    Nenhum pagamento atrasado!
                   </Typography>
                 </Box>
               )}
@@ -459,68 +480,89 @@ export default function DashboardPage() {
           </motion.div>
         </Grid>
 
-        {/* Últimos Pagamentos Recebidos */}
-        <Grid item xs={12}>
+        {/* Pagamentos Recentes */}
+        <Grid item xs={12} md={6}>
           <motion.div variants={itemVariants}>
-            <GlassCard variant="success" sx={{ p: 3 }}>
-              <Box
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  mb: 2,
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <CheckCircle sx={{ color: '#22c55e', mr: 1 }} />
-                  <Typography variant="h6" fontWeight={600}>
-                    Últimos Pagamentos Recebidos
+            <GlassCard sx={{ p: { xs: 1.5, sm: 2 }, height: '100%' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <CheckCircle sx={{ color: '#22c55e', fontSize: { xs: 18, sm: 20 } }} />
+                  <Typography sx={{ fontWeight: 600, fontSize: { xs: '0.85rem', sm: '1rem' } }}>
+                    Pagos Recentes
                   </Typography>
                 </Box>
+                <IconButton size="small" onClick={() => navigate('/pagamentos')}>
+                  <ArrowForward sx={{ fontSize: 16 }} />
+                </IconButton>
               </Box>
 
               {recentPagamentos.length > 0 ? (
-                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                  {recentPagamentos.map((pag, idx) => (
-                    <motion.div
-                      key={idx}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: idx * 0.05 }}
-                    >
-                      <Box
-                        sx={{
-                          p: 2,
-                          borderRadius: '12px',
-                          backgroundColor: 'rgba(34, 197, 94, 0.05)',
-                          border: '1px solid rgba(34, 197, 94, 0.1)',
-                          minWidth: 200,
-                        }}
-                      >
-                        <Typography variant="body2" fontWeight={600}>
-                          {pag.clienteNome || 'Cliente'}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {pag.veiculoPlaca || 'Veículo'}
-                        </Typography>
-                        <Box sx={{ mt: 1 }}>
-                          <Typography variant="h6" color="#22c55e" fontWeight={700}>
-                            R$ {pag.valor}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </motion.div>
-                  ))}
+                <Box sx={{ maxHeight: { xs: 200, sm: 280 }, overflow: 'auto' }}>
+                  <AnimatePresence>
+                    {recentPagamentos.map((p, i) => (
+                      <motion.div key={p.id || i} variants={itemVariants}>
+                        <PagamentoRecenteCard pagamento={p} />
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
                 </Box>
               ) : (
-                <Typography variant="body2" color="text.secondary">
-                  Nenhum pagamento recebido recentemente
-                </Typography>
+                <Box sx={{ textAlign: 'center', py: 3 }}>
+                  <Schedule sx={{ fontSize: 32, color: '#eab308', mb: 1 }} />
+                  <Typography sx={{ fontSize: '0.8rem', color: 'text.secondary' }}>
+                    Nenhum pagamento recente
+                  </Typography>
+                </Box>
               )}
             </GlassCard>
           </motion.div>
         </Grid>
       </Grid>
+
+      {/* Resumo Financeiro Compacto */}
+      <motion.div variants={itemVariants}>
+        <GlassCard sx={{ p: { xs: 1.5, sm: 2 }, mt: { xs: 2, sm: 3 } }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+            <TrendingUp sx={{ color: '#6366f1', fontSize: { xs: 18, sm: 20 } }} />
+            <Typography sx={{ fontWeight: 600, fontSize: { xs: '0.85rem', sm: '1rem' } }}>
+              Resumo Financeiro - Mês Atual
+            </Typography>
+          </Box>
+          
+          <Grid container spacing={1.5}>
+            <Grid item xs={4}>
+              <Box sx={{ textAlign: 'center' }}>
+                <Typography sx={{ color: 'text.secondary', fontSize: { xs: '0.6rem', sm: '0.7rem' } }}>
+                  Pendente
+                </Typography>
+                <Typography sx={{ fontWeight: 700, fontSize: { xs: '0.9rem', sm: '1.1rem' }, color: '#eab308' }}>
+                  R$ {valorPendente.toFixed(2).replace('.', ',')}
+                </Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={4}>
+              <Box sx={{ textAlign: 'center' }}>
+                <Typography sx={{ color: 'text.secondary', fontSize: { xs: '0.6rem', sm: '0.7rem' } }}>
+                  Recebido
+                </Typography>
+                <Typography sx={{ fontWeight: 700, fontSize: { xs: '0.9rem', sm: '1.1rem' }, color: '#22c55e' }}>
+                  R$ {valorRecebido.toFixed(2).replace('.', ',')}
+                </Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={4}>
+              <Box sx={{ textAlign: 'center' }}>
+                <Typography sx={{ color: 'text.secondary', fontSize: { xs: '0.6rem', sm: '0.7rem' } }}>
+                  Total Esperado
+                </Typography>
+                <Typography sx={{ fontWeight: 700, fontSize: { xs: '0.9rem', sm: '1.1rem' }, color: '#6366f1' }}>
+                  R$ {valorTotalEsperado.toFixed(2).replace('.', ',')}
+                </Typography>
+              </Box>
+            </Grid>
+          </Grid>
+        </GlassCard>
+      </motion.div>
     </Box>
   );
 }

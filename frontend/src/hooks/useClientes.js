@@ -104,6 +104,32 @@ export function useClientes() {
     }
   }, [carregarClientes]);
 
+  // Alterna status do cliente (ativar/desativar)
+  const alternarStatus = useCallback(async (clienteId) => {
+    try {
+      const response = await clienteApi.alternarStatus(clienteId);
+      if (response.success) {
+        toast.success(response.message || 'Status alterado com sucesso!');
+        await carregarClientes();
+      }
+      return response;
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Erro ao alterar status');
+      throw err;
+    }
+  }, [carregarClientes]);
+
+  // Lista veículos de um cliente
+  const listarVeiculosCliente = useCallback(async (clienteId) => {
+    try {
+      const response = await clienteApi.listarVeiculos(clienteId);
+      return response;
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Erro ao listar veículos do cliente');
+      throw err;
+    }
+  }, []);
+
   // Carrega ao montar
   useEffect(() => {
     carregarClientes();
@@ -119,6 +145,8 @@ export function useClientes() {
     adicionarCliente,
     atualizarCliente,
     removerCliente,
+    alternarStatus,
+    listarVeiculosCliente,
   };
 }
 

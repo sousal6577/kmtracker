@@ -3,7 +3,7 @@ import { Box, Typography } from '@mui/material';
 import { motion } from 'framer-motion';
 import { Logo } from '../ui';
 
-export default function Loading({ message = 'Carregando...' }) {
+export default function Loading({ message = 'Carregando...', fullScreen = false }) {
   return (
     <Box
       sx={{
@@ -11,8 +11,17 @@ export default function Loading({ message = 'Carregando...' }) {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        minHeight: '400px',
+        minHeight: fullScreen ? '100vh' : '400px',
         gap: 3,
+        ...(fullScreen && {
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #16213e 100%)',
+          zIndex: 9999,
+        }),
       }}
     >
       <motion.div

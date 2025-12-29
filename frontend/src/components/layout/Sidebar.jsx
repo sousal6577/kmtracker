@@ -30,7 +30,7 @@ import {
   AdminPanelSettings,
   NotificationsOutlined,
 } from '@mui/icons-material';
-import { motion, AnimatePresence } from 'framer-motion';
+
 import { useAuth } from '../../contexts/AuthContext';
 import Logo from '../ui/Logo';
 
@@ -135,29 +135,11 @@ export default function Sidebar({ open, onToggle, mobileOpen, onMobileClose }) {
           position: 'relative',
         }}
       >
-        <AnimatePresence mode="wait">
-          {!collapsed ? (
-            <motion.div
-              key="full"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              <Logo size="medium" />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="collapsed"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              <Logo size="small" showText={false} />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {!collapsed ? (
+          <Logo size="medium" />
+        ) : (
+          <Logo size="small" showText={false} />
+        )}
 
         {!isMobile && !collapsed && (
           <IconButton
@@ -200,12 +182,6 @@ export default function Sidebar({ open, onToggle, mobileOpen, onMobileClose }) {
           const isActive = location.pathname === item.path;
           
           return (
-            <motion.div
-              key={item.path}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.05 }}
-            >
               <Tooltip 
                 title={collapsed ? item.text : ''} 
                 placement="right"
@@ -286,7 +262,6 @@ export default function Sidebar({ open, onToggle, mobileOpen, onMobileClose }) {
                   </ListItemButton>
                 </ListItem>
               </Tooltip>
-            </motion.div>
           );
         })}
       </List>
@@ -363,7 +338,6 @@ export default function Sidebar({ open, onToggle, mobileOpen, onMobileClose }) {
             justifyContent: collapsed ? 'center' : 'flex-start',
           }}
         >
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Avatar
               sx={{
                 width: collapsed ? 40 : 44,
@@ -376,7 +350,6 @@ export default function Sidebar({ open, onToggle, mobileOpen, onMobileClose }) {
             >
               {user?.nome?.[0]?.toUpperCase() || user?.username?.[0]?.toUpperCase() || 'U'}
             </Avatar>
-          </motion.div>
 
           {!collapsed && (
             <Box sx={{ flex: 1, minWidth: 0 }}>

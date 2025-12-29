@@ -24,7 +24,6 @@ import {
   LightMode,
   DarkMode,
 } from '@mui/icons-material';
-import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import SearchInput from '../ui/SearchInput';
 
@@ -83,11 +82,7 @@ export default function Header({ onMenuClick, title, subtitle }) {
 
         {/* Title Section */}
         <Box sx={{ flex: 1 }}>
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
+          <Box>
             <Typography
               variant={isMobile ? 'h6' : 'h5'}
               sx={{
@@ -108,7 +103,7 @@ export default function Header({ onMenuClick, title, subtitle }) {
                 {subtitle}
               </Typography>
             )}
-          </motion.div>
+          </Box>
         </Box>
 
         {/* Search - Desktop Only */}

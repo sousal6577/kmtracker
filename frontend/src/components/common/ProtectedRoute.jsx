@@ -8,7 +8,7 @@ export default function ProtectedRoute({ children }) {
   const location = useLocation();
 
   if (loading) {
-    return <Loading message="Verificando autenticação..." />;
+    return <Loading message="Verificando autenticação..." fullScreen />;
   }
 
   if (!isAuthenticated) {

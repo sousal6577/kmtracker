@@ -1,7 +1,6 @@
 // src/components/layout/Layout.jsx - Layout Principal Moderno
 import { useState } from 'react';
 import { Box, useMediaQuery, useTheme } from '@mui/material';
-import { motion } from 'framer-motion';
 import Sidebar from './Sidebar';
 import Header from './Header';
 
@@ -77,13 +76,7 @@ export default function Layout({ children, title, subtitle }) {
             overflowY: 'auto',
           }}
         >
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-          >
-            {children}
-          </motion.div>
+          {children}
         </Box>
       </Box>
     </Box>

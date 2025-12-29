@@ -11,10 +11,18 @@ const veiculoApi = {
   },
 
   /**
+   * Lista veículos de um cliente específico
+   */
+  listarPorCliente: async (clienteId) => {
+    const response = await api.get('/veiculos', { params: { clienteId } });
+    return response.data;
+  },
+
+  /**
    * Obtém um veículo específico
    */
-  obter: async (cpf, veiculoId) => {
-    const response = await api.get(`/veiculos/${cpf}/${veiculoId}`);
+  obter: async (id) => {
+    const response = await api.get(`/veiculos/${id}`);
     return response.data;
   },
 
@@ -29,16 +37,16 @@ const veiculoApi = {
   /**
    * Atualiza veículo existente
    */
-  atualizar: async (cpf, veiculoId, dados) => {
-    const response = await api.put(`/veiculos/${cpf}/${veiculoId}`, dados);
+  atualizar: async (id, dados) => {
+    const response = await api.put(`/veiculos/${id}`, dados);
     return response.data;
   },
 
   /**
    * Exclui um veículo
    */
-  excluir: async (cpf, veiculoId) => {
-    const response = await api.delete(`/veiculos/${cpf}/${veiculoId}`);
+  excluir: async (id) => {
+    const response = await api.delete(`/veiculos/${id}`);
     return response.data;
   },
 
@@ -47,6 +55,14 @@ const veiculoApi = {
    */
   buscarPorPlaca: async (placa) => {
     const response = await api.get('/veiculos/buscar', { params: { placa } });
+    return response.data;
+  },
+
+  /**
+   * Obtém estatísticas dos veículos
+   */
+  estatisticas: async () => {
+    const response = await api.get('/veiculos/estatisticas');
     return response.data;
   }
 };

@@ -19,6 +19,14 @@ const clienteApi = {
   },
 
   /**
+   * Obtém um cliente por ID
+   */
+  obterPorId: async (clienteId) => {
+    const response = await api.get(`/clientes/id/${clienteId}`);
+    return response.data;
+  },
+
+  /**
    * Registra novo cliente
    */
   registrar: async (dados) => {
@@ -35,6 +43,14 @@ const clienteApi = {
   },
 
   /**
+   * Alterna status do cliente (ativo/inativo)
+   */
+  alternarStatus: async (clienteId) => {
+    const response = await api.patch(`/clientes/${clienteId}/status`);
+    return response.data;
+  },
+
+  /**
    * Exclui um cliente
    */
   excluir: async (clienteId) => {
@@ -47,6 +63,14 @@ const clienteApi = {
    */
   buscar: async (termo) => {
     const response = await api.get('/clientes/buscar', { params: { termo } });
+    return response.data;
+  },
+
+  /**
+   * Lista veículos de um cliente
+   */
+  listarVeiculos: async (clienteId) => {
+    const response = await api.get(`/clientes/${clienteId}/veiculos`);
     return response.data;
   },
 

@@ -22,6 +22,27 @@ class PagamentoServiceV2 {
       query = query.limit(limite);
       const snapshot = await query.get();
       
+      // Se não houver pagamentos do mês atual, tenta criar automaticamente
+      if (snapshot.empty) {
+        console.log(`[PagamentoService] Nenhum pagamento encontrado para ${mesAno}. Tentando criar...`);
+        const resultado = await this.iniciarNovoMes();
+        if (resultado.success && resultado.pagamentosCriados > 0) {
+          // Busca novamente após criar
+          const newSnapshot = await this.collection.where('mesAno', '==', mesAno).limit(limite).get();
+          const pagamentos = newSnapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() }))
+            .sort((a, b) => (a.clienteNome || '').localeCompare(b.clienteNome || ''));
+          
+          return {
+            success: true,
+            pagamentos,
+            mesAno,
+            total: pagamentos.length,
+            mensagem: `Novo mês ${mesAno} iniciado com ${resultado.pagamentosCriados} pagamentos`
+          };
+        }
+      }
+      
       // Ordena em memória
       const pagamentos = snapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))
@@ -231,7 +252,8 @@ class PagamentoServiceV2 {
       // Verifica se já existem pagamentos do mês
       const existentes = await this.collection.where('mesAno', '==', mesAno).limit(1).get();
       if (!existentes.empty) {
-        throw { status: 409, message: `Pagamentos de ${mesAno} já existem` };
+        console.log(`[PagamentoService] Pagamentos de ${mesAno} já existem`);
+        return { success: true, message: `Pagamentos de ${mesAno} já existem`, pagamentosCriados: 0 };
       }
 
       // Busca todos os veículos ativos
@@ -240,12 +262,24 @@ class PagamentoServiceV2 {
         .get();
 
       if (veiculosSnap.empty) {
+        console.log('[PagamentoService] Nenhum veículo ativo encontrado');
         return {
           success: true,
           message: 'Nenhum veículo ativo encontrado',
           pagamentosCriados: 0
         };
       }
+
+      // Busca os clientes para pegar telefone
+      const clientesSnap = await collections.clientes.get();
+      const clientesMap = {};
+      clientesSnap.docs.forEach(doc => {
+        const data = doc.data();
+        clientesMap[doc.id] = data;
+        if (data.cpf) {
+          clientesMap[data.cpf.replace(/\D/g, '')] = data;
+        }
+      });
 
       // Cria pagamentos em batch
       const batch = firestore.batch();
@@ -254,16 +288,23 @@ class PagamentoServiceV2 {
       for (const veiculoDoc of veiculosSnap.docs) {
         const veiculo = veiculoDoc.data();
         
+        // Busca telefone do cliente
+        const cliente = clientesMap[veiculo.clienteId] || clientesMap[veiculo.clienteCpf] || {};
+        
         const pagamento = {
           veiculoId: veiculoDoc.id,
           clienteId: veiculo.clienteId,
           clienteCpf: veiculo.clienteCpf,
           clienteNome: veiculo.clienteNome,
           placa: veiculo.placa,
+          modelo: veiculo.modelo || '',
+          tipoVeiculo: veiculo.tipoVeiculo || 'carro',
+          telefone: cliente.telefone || veiculo.telefone || '',
           
           ano: anoAlvo,
           mes: mesAlvo,
           mesAno,
+          diaVencimento: veiculo.diaVencimento || 10,
           
           valor: veiculo.valor || 0,
           valorPago: 0,
@@ -290,6 +331,7 @@ class PagamentoServiceV2 {
       }
 
       await batch.commit();
+      console.log(`[PagamentoService] ✅ Novo mês ${mesAno} iniciado com ${count} pagamentos`);
 
       return {
         success: true,

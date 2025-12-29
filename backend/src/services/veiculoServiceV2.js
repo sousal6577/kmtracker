@@ -105,20 +105,37 @@ class VeiculoServiceV2 {
   }
 
   /**
-   * Lista veículos de um cliente
+   * Lista veículos de um cliente (aceita ID ou CPF)
    */
-  async listarPorCliente(clienteCpf) {
+  async listarPorCliente(clienteIdOrCpf) {
     try {
-      const cpfNormalizado = clienteCpf.replace(/\D/g, '');
-      const snapshot = await this.collection
-        .where('clienteCpf', '==', cpfNormalizado)
-        .orderBy('placa')
-        .get();
+      let snapshot;
+      
+      // Tenta primeiro por clienteId (se parecer ser um ID do Firestore)
+      if (clienteIdOrCpf.length > 15 && !clienteIdOrCpf.includes('.')) {
+        snapshot = await this.collection
+          .where('clienteId', '==', clienteIdOrCpf)
+          .get();
+        
+        // Se não encontrou por ID, tenta por CPF
+        if (snapshot.empty) {
+          const cpfNormalizado = clienteIdOrCpf.replace(/\D/g, '');
+          snapshot = await this.collection
+            .where('clienteCpf', '==', cpfNormalizado)
+            .get();
+        }
+      } else {
+        // Busca por CPF
+        const cpfNormalizado = clienteIdOrCpf.replace(/\D/g, '');
+        snapshot = await this.collection
+          .where('clienteCpf', '==', cpfNormalizado)
+          .get();
+      }
 
       const veiculos = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
-      }));
+      })).sort((a, b) => (a.placa || '').localeCompare(b.placa || ''));
 
       return {
         success: true,

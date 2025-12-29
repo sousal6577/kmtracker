@@ -5,12 +5,13 @@ import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import routes from './src/routes/index.js';
 import { errorHandler, notFoundHandler } from './src/middlewares/errorHandler.js';
+import cronService from './src/services/cronService.js';
 
 // Carrega variáveis de ambiente
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3080;
+const PORT = process.env.PORT || 3005;
 
 // ======================
 // MIDDLEWARES GLOBAIS
@@ -107,6 +108,9 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`║  → http://localhost:${PORT}/api/pagamentos ║`);
   console.log('╚════════════════════════════════════════╝');
   console.log('');
+  
+  // Inicia o serviço de tarefas agendadas (cron)
+  cronService.start();
 });
 
 export default app;

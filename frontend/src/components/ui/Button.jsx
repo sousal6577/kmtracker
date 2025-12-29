@@ -1,6 +1,5 @@
-// src/components/ui/Button.jsx - Botões Modernos
+// src/components/ui/Button.jsx - Botões Modernos (Otimizado)
 import { Button as MuiButton, CircularProgress } from '@mui/material';
-import { motion } from 'framer-motion';
 
 export default function Button({
   children,
@@ -70,12 +69,7 @@ export default function Button({
   };
 
   return (
-    <motion.div
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-      style={{ width: fullWidth ? '100%' : 'auto' }}
-    >
-      <MuiButton
+    <MuiButton
         variant={variant}
         fullWidth={fullWidth}
         disabled={loading || props.disabled}
@@ -135,6 +129,5 @@ export default function Button({
           children
         )}
       </MuiButton>
-    </motion.div>
   );
 }

@@ -1,10 +1,13 @@
 // src/App.jsx - Componente Principal com Design Moderno
+import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/common/ProtectedRoute';
+import ErrorBoundary from './components/common/ErrorBoundary';
 import { Layout } from './components/layout';
+import { InstallPWAModal, usePWAInstall } from './components/pwa';
 import theme from './styles/theme';
 import './styles/index.css';
 
@@ -15,11 +18,65 @@ import DashboardPage from './pages/DashboardPage';
 import ClientesPage from './pages/ClientesPage';
 import VeiculosPage from './pages/VeiculosPage';
 import PagamentosPage from './pages/PagamentosPage';
+import AdminPage from './pages/AdminPage';
+import ConfiguracoesPage from './pages/ConfiguracoesPage';
 
-function App() {
+// Registra Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then((registration) => {
+        console.log('SW registered: ', registration);
+      })
+      .catch((error) => {
+        console.log('SW registration failed: ', error);
+      });
+  });
+}
+
+function AppContent() {
+  const { isInstallable, isInstalled, installPWA, showManualInstructions, deferredPrompt } = usePWAInstall();
+  const [showInstallModal, setShowInstallModal] = useState(false);
+
+  useEffect(() => {
+    // Mostra o modal após 2 segundos se o app for instalável e não está instalado
+    if (isInstallable && !isInstalled) {
+      const timer = setTimeout(() => {
+        const dismissed = localStorage.getItem('pwa-install-dismissed');
+        const dismissedTime = localStorage.getItem('pwa-install-dismissed-time');
+        
+        // Se foi dispensado há mais de 24h, mostra novamente
+        if (dismissedTime) {
+          const timeSinceDismissed = Date.now() - parseInt(dismissedTime);
+          if (timeSinceDismissed > 24 * 60 * 60 * 1000) {
+            localStorage.removeItem('pwa-install-dismissed');
+            localStorage.removeItem('pwa-install-dismissed-time');
+          }
+        }
+        
+        if (!dismissed) {
+          setShowInstallModal(true);
+        }
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [isInstallable, isInstalled]);
+
+  const handleInstall = async () => {
+    const installed = await installPWA();
+    if (installed) {
+      setShowInstallModal(false);
+    }
+  };
+
+  const handleDismiss = () => {
+    setShowInstallModal(false);
+    localStorage.setItem('pwa-install-dismissed', 'true');
+    localStorage.setItem('pwa-install-dismissed-time', Date.now().toString());
+  };
+
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
+    <>
       <Toaster
         position="top-right"
         toastOptions={{
@@ -96,10 +153,52 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <AdminPage />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/configuracoes"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <ConfiguracoesPage />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
           </Routes>
         </BrowserRouter>
       </AuthProvider>
-    </ThemeProvider>
+
+      {/* Modal de Instalação PWA */}
+      <InstallPWAModal
+        open={showInstallModal}
+        onClose={handleDismiss}
+        onInstall={handleInstall}
+        showManualInstructions={showManualInstructions}
+        hasPrompt={!!deferredPrompt}
+      />
+    </>
+  );
+}
+
+function App() {
+  return (
+    <ErrorBoundary>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <AppContent />
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 

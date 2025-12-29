@@ -3,31 +3,37 @@ import api from './axios';
 
 const pagamentoApi = {
   /**
-   * Lista todos os pagamentos
+   * Lista pagamentos do mês atual ou específico
    */
-  listar: async () => {
-    const response = await api.get('/pagamentos');
+  listar: async (mes = null, ano = null) => {
+    const params = {};
+    if (mes) params.mes = mes;
+    if (ano) params.ano = ano;
+    const response = await api.get('/pagamentos', { params });
     return response.data;
   },
 
   /**
-   * Confirma pagamento de um veículo
+   * Confirma pagamento
    */
-  confirmar: async (cpf, veiculoId) => {
-    const response = await api.post('/pagamentos/confirmar', { cpf, veiculoId });
+  confirmar: async (pagamentoId, dados = {}) => {
+    const response = await api.post('/pagamentos/confirmar', { 
+      pagamentoId,
+      ...dados 
+    });
     return response.data;
   },
 
   /**
-   * Marca veículo como pendente
+   * Marca pagamento como pendente
    */
-  marcarPendente: async (cpf, veiculoId) => {
-    const response = await api.post('/pagamentos/pendente', { cpf, veiculoId });
+  marcarPendente: async (pagamentoId) => {
+    const response = await api.post('/pagamentos/pendente', { pagamentoId });
     return response.data;
   },
 
   /**
-   * Lista todos os veículos com pagamento atrasado
+   * Lista pagamentos atrasados
    */
   listarAtrasados: async () => {
     const response = await api.get('/pagamentos/atrasados');
@@ -35,7 +41,7 @@ const pagamentoApi = {
   },
 
   /**
-   * Inicia novo mês (reseta status para pendente)
+   * Inicia novo mês
    */
   iniciarNovoMes: async () => {
     const response = await api.post('/pagamentos/novo-mes');
@@ -51,10 +57,18 @@ const pagamentoApi = {
   },
 
   /**
-   * Obtém resumo do mês
+   * Obtém resumo/dashboard
    */
   obterResumo: async (mes, ano) => {
     const response = await api.get('/pagamentos/resumo', { params: { mes, ano } });
+    return response.data;
+  },
+
+  /**
+   * Dashboard geral
+   */
+  dashboard: async () => {
+    const response = await api.get('/pagamentos/dashboard');
     return response.data;
   }
 };

@@ -11,6 +11,7 @@ import {
   MenuItem,
   Autocomplete,
   TextField,
+  InputAdornment,
 } from '@mui/material';
 import {
   DirectionsCar,
@@ -22,6 +23,11 @@ import {
   Speed,
   ColorLens,
   Business,
+  Notes,
+  Router,
+  SimCard,
+  Settings,
+  ShoppingCart,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { useForm, Controller } from 'react-hook-form';
@@ -36,6 +42,7 @@ export default function VeiculoModal({
   onSave,
   veiculo = null,
   clientes = [],
+  clientePreSelecionado = null,
   loading = false,
 }) {
   const isEditing = Boolean(veiculo);
@@ -58,6 +65,11 @@ export default function VeiculoModal({
       valor: '',
       dataInstalacao: new Date().toISOString().split('T')[0],
       tipo: 'carro',
+      imei: '',
+      numeroSim: '',
+      equipamento: '',
+      tipoAquisicao: '',
+      obs: '',
     },
   });
 
@@ -73,8 +85,32 @@ export default function VeiculoModal({
         valor: veiculo.valor || '',
         dataInstalacao: veiculo.dataInstalacao || new Date().toISOString().split('T')[0],
         tipo: veiculo.tipo || 'carro',
+        imei: veiculo.imei || '',
+        numeroSim: veiculo.numeroSim || '',
+        equipamento: veiculo.equipamento || '',
+        tipoAquisicao: veiculo.tipoAquisicao || '',
+        obs: veiculo.obs || '',
       });
       setTipoVeiculo(veiculo.tipo || 'carro');
+    } else if (clientePreSelecionado) {
+      // Pré-seleciona o cliente se vier da página de clientes
+      reset({
+        clienteId: clientePreSelecionado.id,
+        placa: '',
+        marca: '',
+        modelo: '',
+        ano: '',
+        cor: '',
+        valor: '',
+        dataInstalacao: new Date().toISOString().split('T')[0],
+        tipo: 'carro',
+        imei: '',
+        numeroSim: '',
+        equipamento: '',
+        tipoAquisicao: '',
+        obs: '',
+      });
+      setTipoVeiculo('carro');
     } else {
       reset({
         clienteId: '',
@@ -86,10 +122,15 @@ export default function VeiculoModal({
         valor: '',
         dataInstalacao: new Date().toISOString().split('T')[0],
         tipo: 'carro',
+        imei: '',
+        numeroSim: '',
+        equipamento: '',
+        tipoAquisicao: '',
+        obs: '',
       });
       setTipoVeiculo('carro');
     }
-  }, [veiculo, reset, open]);
+  }, [veiculo, clientePreSelecionado, reset, open]);
 
   const handleTipoChange = (tipo) => {
     setTipoVeiculo(tipo);
@@ -118,14 +159,44 @@ export default function VeiculoModal({
   };
 
   const marcas = {
-    carro: ['Chevrolet', 'Fiat', 'Ford', 'Honda', 'Hyundai', 'Jeep', 'Nissan', 'Renault', 'Toyota', 'Volkswagen'],
-    moto: ['BMW', 'Dafra', 'Harley-Davidson', 'Honda', 'Kawasaki', 'Suzuki', 'Triumph', 'Yamaha'],
-    caminhao: ['DAF', 'Iveco', 'MAN', 'Mercedes-Benz', 'Scania', 'Volvo', 'Volkswagen'],
-    van: ['Fiat', 'Ford', 'Mercedes-Benz', 'Peugeot', 'Renault', 'Volkswagen'],
-    trator: ['Case IH', 'John Deere', 'Massey Ferguson', 'New Holland', 'Valtra'],
-    eletrico: ['BYD', 'Chevrolet', 'JAC', 'Nissan', 'Renault', 'Tesla', 'Volvo'],
-    motocicleta: ['BMW', 'Honda', 'Kawasaki', 'Suzuki', 'Triumph', 'Yamaha'],
-    onibus: ['Marcopolo', 'Mercedes-Benz', 'Scania', 'Volkswagen', 'Volvo'],
+    carro: [
+      'Audi', 'BMW', 'BYD', 'Caoa Chery', 'Chevrolet', 'Citroën', 'Dodge', 'Fiat', 
+      'Ford', 'GWM', 'Honda', 'Hyundai', 'JAC', 'Jeep', 'Kia', 'Land Rover', 
+      'Lexus', 'Mercedes-Benz', 'Mini', 'Mitsubishi', 'Nissan', 'Peugeot', 
+      'Porsche', 'RAM', 'Renault', 'Subaru', 'Suzuki', 'Toyota', 'Volvo', 'Volkswagen',
+    ],
+    moto: [
+      'Avelloz', 'BMW', 'Bull', 'Dafra', 'Ducati', 'Haojue', 'Harley-Davidson', 
+      'Honda', 'Husqvarna', 'Indian', 'Kawasaki', 'KTM', 'MV Agusta', 'Royal Enfield', 
+      'Shineray', 'Suzuki', 'Triumph', 'Yamaha',
+    ],
+    caminhao: [
+      'Agrale', 'DAF', 'Ford', 'Foton', 'Hyundai', 'International', 'Iveco', 
+      'MAN', 'Mercedes-Benz', 'Scania', 'Sinotruk', 'Volkswagen', 'Volvo',
+    ],
+    van: [
+      'Citroën', 'Fiat', 'Ford', 'Iveco', 'JAC', 'Mercedes-Benz', 'Peugeot', 
+      'Renault', 'Volkswagen',
+    ],
+    trator: [
+      'AGCO', 'Agrale', 'Case IH', 'Deutz-Fahr', 'John Deere', 'Kubota', 
+      'Landini', 'LS Tractor', 'Mahindra', 'Massey Ferguson', 'New Holland', 
+      'Valtra', 'Yanmar',
+    ],
+    eletrico: [
+      'Audi', 'BMW', 'BYD', 'Caoa Chery', 'Chevrolet', 'Ford', 'GWM', 
+      'JAC', 'Mercedes-Benz', 'Mini', 'Nissan', 'Peugeot', 'Porsche', 
+      'Renault', 'Tesla', 'Volvo', 'Volkswagen',
+    ],
+    motocicleta: [
+      'Avelloz', 'BMW', 'Dafra', 'Ducati', 'Haojue', 'Harley-Davidson', 
+      'Honda', 'Kawasaki', 'KTM', 'Royal Enfield', 'Shineray', 'Suzuki', 
+      'Triumph', 'Yamaha',
+    ],
+    onibus: [
+      'Agrale', 'Busscar', 'Caio', 'Comil', 'Irizar', 'Marcopolo', 
+      'Mercedes-Benz', 'Neobus', 'Scania', 'Volkswagen', 'Volvo',
+    ],
   };
 
   const cores = [
@@ -468,6 +539,164 @@ export default function VeiculoModal({
                     error={!!errors.dataInstalacao}
                     helperText={errors.dataInstalacao?.message}
                     InputLabelProps={{ shrink: true }}
+                  />
+                )}
+              />
+            </motion.div>
+          </Grid>
+
+          {/* Campos Técnicos */}
+          <Grid item xs={12}>
+            <Typography variant="subtitle2" sx={{ color: 'text.secondary', mt: 2, mb: 1 }}>
+              Informações do Rastreador
+            </Typography>
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5 }}
+            >
+              <Controller
+                name="imei"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    label="IMEI"
+                    icon={<Router />}
+                    placeholder="Ex: 123456789012345"
+                  />
+                )}
+              />
+            </motion.div>
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.55 }}
+            >
+              <Controller
+                name="numeroSim"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    label="Número do SIM"
+                    icon={<SimCard />}
+                    placeholder="Ex: 5511999999999"
+                  />
+                )}
+              />
+            </motion.div>
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.6 }}
+            >
+              <Controller
+                name="equipamento"
+                control={control}
+                render={({ field }) => (
+                  <FormControl fullWidth>
+                    <InputLabel>Equipamento</InputLabel>
+                    <Select
+                      {...field}
+                      value={field.value?.toUpperCase() || ''}
+                      onChange={(e) => field.onChange(e.target.value)}
+                      label="Equipamento"
+                      sx={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                        borderRadius: '12px',
+                      }}
+                    >
+                      <MenuItem value="">Selecione</MenuItem>
+                      <MenuItem value="GT06">GT06</MenuItem>
+                      <MenuItem value="ST310">ST310</MenuItem>
+                      <MenuItem value="TK103">TK103</MenuItem>
+                      <MenuItem value="GPS103">GPS103</MenuItem>
+                      <MenuItem value="E3+">E3+</MenuItem>
+                      <MenuItem value="E3">E3</MenuItem>
+                      <MenuItem value="JV200">JV200</MenuItem>
+                      <MenuItem value="SUNTECH">Suntech</MenuItem>
+                      <MenuItem value="OUTRO">Outro</MenuItem>
+                    </Select>
+                  </FormControl>
+                )}
+              />
+            </motion.div>
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.65 }}
+            >
+              <Controller
+                name="tipoAquisicao"
+                control={control}
+                render={({ field }) => (
+                  <FormControl fullWidth>
+                    <InputLabel>Tipo de Aquisição</InputLabel>
+                    <Select
+                      {...field}
+                      value={field.value?.toUpperCase() || ''}
+                      onChange={(e) => field.onChange(e.target.value)}
+                      label="Tipo de Aquisição"
+                      sx={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                        borderRadius: '12px',
+                      }}
+                    >
+                      <MenuItem value="">Selecione</MenuItem>
+                      <MenuItem value="COMODATO">Comodato</MenuItem>
+                      <MenuItem value="VENDA">Venda</MenuItem>
+                      <MenuItem value="ALUGUEL">Aluguel</MenuItem>
+                    </Select>
+                  </FormControl>
+                )}
+              />
+            </motion.div>
+          </Grid>
+
+          {/* Observações */}
+          <Grid item xs={12}>
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.7 }}
+            >
+              <Controller
+                name="obs"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="Observações"
+                    multiline
+                    rows={3}
+                    fullWidth
+                    placeholder="Anotações sobre o veículo ou instalação..."
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start" sx={{ alignSelf: 'flex-start', mt: 1.5 }}>
+                          <Notes sx={{ color: 'primary.main' }} />
+                        </InputAdornment>
+                      ),
+                    }}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                        borderRadius: '12px',
+                      },
+                    }}
                   />
                 )}
               />

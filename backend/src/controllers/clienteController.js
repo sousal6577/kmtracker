@@ -38,6 +38,22 @@ class ClienteController {
   }
 
   /**
+   * GET /api/clientes/id/:clienteId
+   */
+  async obterPorId(req, res) {
+    try {
+      const { clienteId } = req.params;
+      const result = await clienteService.obterPorId(clienteId);
+      res.json(result);
+    } catch (error) {
+      res.status(error.status || 500).json({ 
+        success: false, 
+        message: error.message 
+      });
+    }
+  }
+
+  /**
    * POST /api/clientes
    */
   async registrar(req, res) {
@@ -57,6 +73,73 @@ class ClienteController {
 
       const result = await clienteService.criar(dados);
       res.status(201).json(result);
+    } catch (error) {
+      res.status(error.status || 500).json({ 
+        success: false, 
+        message: error.message 
+      });
+    }
+  }
+
+  /**
+   * PUT /api/clientes/:clienteId
+   */
+  async atualizar(req, res) {
+    try {
+      const { clienteId } = req.params;
+      const dados = req.body;
+      const result = await clienteService.atualizar(clienteId, dados);
+      res.json(result);
+    } catch (error) {
+      res.status(error.status || 500).json({ 
+        success: false, 
+        message: error.message 
+      });
+    }
+  }
+
+  /**
+   * PATCH /api/clientes/:clienteId/status
+   * Alterna o status do cliente (ativo/inativo)
+   */
+  async alternarStatus(req, res) {
+    try {
+      const { clienteId } = req.params;
+      const result = await clienteService.alternarStatus(clienteId);
+      res.json(result);
+    } catch (error) {
+      res.status(error.status || 500).json({ 
+        success: false, 
+        message: error.message 
+      });
+    }
+  }
+
+  /**
+   * DELETE /api/clientes/:clienteId
+   */
+  async excluir(req, res) {
+    try {
+      const { clienteId } = req.params;
+      const result = await clienteService.excluir(clienteId);
+      res.json(result);
+    } catch (error) {
+      res.status(error.status || 500).json({ 
+        success: false, 
+        message: error.message 
+      });
+    }
+  }
+
+  /**
+   * GET /api/clientes/:clienteId/veiculos
+   * Lista veículos de um cliente
+   */
+  async listarVeiculos(req, res) {
+    try {
+      const { clienteId } = req.params;
+      const result = await clienteService.listarVeiculos(clienteId);
+      res.json(result);
     } catch (error) {
       res.status(error.status || 500).json({ 
         success: false, 

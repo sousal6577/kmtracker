@@ -12,9 +12,18 @@ router.use(requireAuth);
 router.get('/buscar', clienteController.buscar);
 router.get('/estatisticas', clienteController.estatisticas);
 
+// Rota por ID (deve vir antes da rota :cpf para não conflitar)
+router.get('/id/:clienteId', clienteController.obterPorId);
+
 // CRUD
 router.get('/', clienteController.listar);
 router.get('/:cpf', clienteController.obter);
 router.post('/', clienteController.registrar);
+router.put('/:clienteId', clienteController.atualizar);
+router.patch('/:clienteId/status', clienteController.alternarStatus);
+router.delete('/:clienteId', clienteController.excluir);
+
+// Veículos do cliente
+router.get('/:clienteId/veiculos', clienteController.listarVeiculos);
 
 export default router;

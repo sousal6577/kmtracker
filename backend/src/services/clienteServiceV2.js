@@ -220,14 +220,115 @@ class ClienteServiceV2 {
   }
 
   /**
+   * Alterna status do cliente (ativo/inativo)
+   */
+  async alternarStatus(id) {
+    try {
+      const docRef = this.collection.doc(id);
+      const doc = await docRef.get();
+      
+      if (!doc.exists) {
+        throw { status: 404, message: 'Cliente não encontrado' };
+      }
+
+      const statusAtual = doc.data().status || 'ativo';
+      const novoStatus = statusAtual === 'ativo' ? 'inativo' : 'ativo';
+
+      await docRef.update({
+        status: novoStatus,
+        updatedAt: FieldValue.serverTimestamp()
+      });
+
+      return {
+        success: true,
+        message: `Cliente ${novoStatus === 'ativo' ? 'ativado' : 'desativado'} com sucesso`,
+        novoStatus
+      };
+    } catch (error) {
+      if (error.status) throw error;
+      console.error('Erro ao alternar status:', error);
+      throw { status: 500, message: 'Erro ao alternar status do cliente' };
+    }
+  }
+
+  /**
+   * Exclui cliente (soft delete - marca como inativo e excluído)
+   */
+  async excluir(id) {
+    try {
+      const docRef = this.collection.doc(id);
+      const doc = await docRef.get();
+      
+      if (!doc.exists) {
+        throw { status: 404, message: 'Cliente não encontrado' };
+      }
+
+      // Verifica se há veículos associados
+      const veiculosSnap = await collections.veiculos.where('clienteId', '==', id).limit(1).get();
+      if (!veiculosSnap.empty) {
+        throw { status: 400, message: 'Não é possível excluir cliente com veículos associados. Remova os veículos primeiro.' };
+      }
+
+      await docRef.delete();
+
+      return {
+        success: true,
+        message: 'Cliente excluído com sucesso'
+      };
+    } catch (error) {
+      if (error.status) throw error;
+      console.error('Erro ao excluir cliente:', error);
+      throw { status: 500, message: 'Erro ao excluir cliente' };
+    }
+  }
+
+  /**
+   * Lista veículos de um cliente
+   */
+  async listarVeiculos(clienteId) {
+    try {
+      const clienteDoc = await this.collection.doc(clienteId).get();
+      if (!clienteDoc.exists) {
+        throw { status: 404, message: 'Cliente não encontrado' };
+      }
+
+      const veiculosSnap = await collections.veiculos
+        .where('clienteId', '==', clienteId)
+        .get();
+
+      const veiculos = veiculosSnap.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      // Calcula valor total
+      const valorTotal = veiculos.reduce((acc, v) => acc + (parseFloat(v.valor) || 0), 0);
+
+      return {
+        success: true,
+        veiculos,
+        total: veiculos.length,
+        valorTotal,
+        cliente: { id: clienteDoc.id, ...clienteDoc.data() }
+      };
+    } catch (error) {
+      if (error.status) throw error;
+      console.error('Erro ao listar veículos do cliente:', error);
+      throw { status: 500, message: 'Erro ao listar veículos do cliente' };
+    }
+  }
+
+  /**
    * Obtém estatísticas dos clientes
    */
   async obterEstatisticas() {
     try {
+      const mesAno = this.getMesAnoAtual();
+      
       const [clientesSnap, veiculosSnap, pagamentosSnap] = await Promise.all([
         this.collection.get(),
         collections.veiculos.get(),
-        collections.pagamentos.where('mesAno', '==', this.getMesAnoAtual()).get()
+        collections.pagamentos.where('mesAno', '==', mesAno).get()
       ]);
 
       let totalValor = 0;
@@ -236,15 +337,24 @@ class ClienteServiceV2 {
       let pagos = 0;
       let atrasados = 0;
 
-      pagamentosSnap.docs.forEach(doc => {
-        const d = doc.data();
-        totalValor += d.valor || 0;
-        totalPago += d.valorPago || 0;
+      // Se não houver pagamentos do mês, calcula baseado nos veículos ativos
+      if (pagamentosSnap.empty) {
+        const veiculosAtivos = veiculosSnap.docs.filter(d => d.data().statusVeiculo === 'ativo');
+        totalValor = veiculosAtivos.reduce((acc, d) => acc + (d.data().valor || 0), 0);
+        pendentes = veiculosAtivos.length;
         
-        if (d.status === 'PAGO') pagos++;
-        else if (d.status === 'ATRASADO') atrasados++;
-        else pendentes++;
-      });
+        console.log(`[Estatísticas] Nenhum pagamento para ${mesAno}. Veículos ativos: ${veiculosAtivos.length}`);
+      } else {
+        pagamentosSnap.docs.forEach(doc => {
+          const d = doc.data();
+          totalValor += d.valor || 0;
+          totalPago += d.valorPago || 0;
+          
+          if (d.status === 'PAGO') pagos++;
+          else if (d.status === 'ATRASADO') atrasados++;
+          else pendentes++;
+        });
+      }
 
       return {
         success: true,
@@ -252,6 +362,8 @@ class ClienteServiceV2 {
           totalClientes: clientesSnap.size,
           totalVeiculos: veiculosSnap.size,
           mesAtual: {
+            mesAno,
+            totalPagamentos: pagamentosSnap.size,
             totalValor,
             totalPago,
             pendentes,

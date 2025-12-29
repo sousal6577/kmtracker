@@ -41,9 +41,9 @@ export function useVeiculos() {
   }, [carregarVeiculos]);
 
   // Atualiza veículo
-  const atualizarVeiculo = useCallback(async (cpf, veiculoId, dados) => {
+  const atualizarVeiculo = useCallback(async (id, dados) => {
     try {
-      const response = await veiculoApi.atualizar(cpf, veiculoId, dados);
+      const response = await veiculoApi.atualizar(id, dados);
       if (response.success) {
         toast.success('Veículo atualizado!');
         await carregarVeiculos();
@@ -56,9 +56,9 @@ export function useVeiculos() {
   }, [carregarVeiculos]);
 
   // Exclui veículo
-  const excluirVeiculo = useCallback(async (cpf, veiculoId) => {
+  const excluirVeiculo = useCallback(async (id) => {
     try {
-      const response = await veiculoApi.excluir(cpf, veiculoId);
+      const response = await veiculoApi.excluir(id);
       if (response.success) {
         toast.success('Veículo excluído!');
         await carregarVeiculos();
@@ -82,7 +82,7 @@ export function useVeiculos() {
     carregarVeiculos,
     adicionarVeiculo,
     atualizarVeiculo,
-    excluirVeiculo
+    excluirVeiculo,
   };
 }
 
