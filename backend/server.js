@@ -3,12 +3,18 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import routes from './src/routes/index.js';
 import { errorHandler, notFoundHandler } from './src/middlewares/errorHandler.js';
 import cronService from './src/services/cronService.js';
 
 // Carrega variáveis de ambiente
 dotenv.config();
+
+// ES Module dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3005;
@@ -29,14 +35,17 @@ app.use(cors({
       'http://localhost:3000',
       'http://127.0.0.1:5173',
       'http://127.0.0.1:5174',
+      'https://www.kmtraker.com.br',
+      'https://kmtraker.com.br',
       process.env.FRONTEND_URL
     ].filter(Boolean);
     
-    // Permite qualquer origem do Codespace ou Railway
+    // Permite qualquer origem do Codespace, Railway ou domínio próprio
     if (origin.includes('.app.github.dev') || 
         origin.includes('.github.dev') ||
         origin.includes('railway.app') ||
         origin.includes('codespaces') ||
+        origin.includes('kmtraker.com.br') ||
         allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
@@ -65,18 +74,39 @@ if (process.env.NODE_ENV !== 'production') {
 // ROTAS
 // ======================
 
-// Rota raiz
-app.get('/', (req, res) => {
-  res.json({
-    name: 'KMTracker API',
-    version: '2.0.0',
-    description: 'API para gestão de rastreamento de veículos',
-    docs: '/api/health'
-  });
-});
-
 // API Routes
 app.use('/api', routes);
+
+// ======================
+// ARQUIVOS ESTÁTICOS (Frontend em produção)
+// ======================
+
+// Serve arquivos estáticos do frontend em produção
+if (process.env.NODE_ENV === 'production') {
+  const publicPath = path.join(__dirname, 'public');
+  
+  // Serve arquivos estáticos
+  app.use(express.static(publicPath));
+  
+  // Para qualquer rota que não seja /api, serve o index.html (SPA)
+  app.get('*', (req, res, next) => {
+    // Se for uma rota da API, passa para o próximo handler
+    if (req.path.startsWith('/api')) {
+      return next();
+    }
+    res.sendFile(path.join(publicPath, 'index.html'));
+  });
+} else {
+  // Em desenvolvimento, a rota raiz retorna info da API
+  app.get('/', (req, res) => {
+    res.json({
+      name: 'KMTracker API',
+      version: '2.0.0',
+      description: 'API para gestão de rastreamento de veículos',
+      docs: '/api/health'
+    });
+  });
+}
 
 // ======================
 // TRATAMENTO DE ERROS
