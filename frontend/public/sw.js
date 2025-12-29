@@ -1,19 +1,25 @@
-const CACHE_NAME = 'kmtracker-v1';
+const CACHE_NAME = 'kmtracker-v2';
+const STATIC_CACHE = 'kmtracker-static-v2';
+const DYNAMIC_CACHE = 'kmtracker-dynamic-v2';
+
 const urlsToCache = [
   '/',
   '/index.html',
-  '/manifest.json'
+  '/manifest.json',
+  '/icons/icon-192x192.png',
+  '/icons/icon-512x512.png'
 ];
 
 // Install Service Worker
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
+    caches.open(STATIC_CACHE)
       .then((cache) => {
-        console.log('Opened cache');
+        console.log('[SW] Cache estático aberto');
         return cache.addAll(urlsToCache);
       })
   );
+  // Força a ativação imediata
   self.skipWaiting();
 });
 
@@ -22,14 +28,16 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            return caches.delete(cacheName);
-          }
-        })
+        cacheNames
+          .filter(name => name !== STATIC_CACHE && name !== DYNAMIC_CACHE)
+          .map(name => {
+            console.log('[SW] Removendo cache antigo:', name);
+            return caches.delete(name);
+          })
       );
     })
   );
+  // Toma controle de todas as páginas
   self.clients.claim();
 });
 

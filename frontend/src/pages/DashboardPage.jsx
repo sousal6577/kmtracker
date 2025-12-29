@@ -248,13 +248,10 @@ export default function DashboardPage() {
     try {
       if (isRefresh) setRefreshing(true);
       
-      // Formato YYYY-MM para o filtro
-      const periodoFiltro = `${anoSelecionado}-${String(mesSelecionado).padStart(2, '0')}`;
-      
       const [statsRes, atrasadosRes, pagamentosRes] = await Promise.all([
         clienteApi.estatisticas(),
         pagamentoApi.listarAtrasados(),
-        pagamentoApi.listar({ referencia: periodoFiltro }),
+        pagamentoApi.listar(mesSelecionado, anoSelecionado),
       ]);
       
       console.log('Stats:', statsRes);

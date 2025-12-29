@@ -1,12 +1,18 @@
 {
   "name": "KM Tracker - Gestão de Rastreamento",
   "short_name": "KM Tracker",
-  "description": "Sistema de gestão de rastreamento veicular",
+  "description": "Sistema de gestão de rastreamento veicular. Controle pagamentos, clientes e veículos em tempo real.",
   "start_url": "/",
+  "scope": "/",
+  "id": "/",
   "display": "standalone",
+  "display_override": ["standalone", "window-controls-overlay"],
   "background_color": "#0f0f1a",
   "theme_color": "#6366f1",
   "orientation": "portrait-primary",
+  "prefer_related_applications": false,
+  "lang": "pt-BR",
+  "dir": "ltr",
   "icons": [
     {
       "src": "/icons/icon-72x72.png",
