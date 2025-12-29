@@ -181,7 +181,9 @@ export default function AdminPage() {
       if (result.success) {
         toast.success(editingUser ? 'Usuário atualizado!' : 'Usuário criado!');
         handleCloseUserModal();
-        loadData();
+        // Pequeno delay para garantir que o Firestore atualizou
+        await new Promise(resolve => setTimeout(resolve, 500));
+        await loadData();
       } else {
         toast.error(result.message || 'Erro ao salvar usuário');
       }

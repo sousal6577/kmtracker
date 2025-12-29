@@ -8,42 +8,55 @@ class VeiculoServiceV2 {
 
   /**
    * Lista todos os veículos com filtros e paginação
+   * Exclui veículos com statusVeiculo = 'cancelado' (excluídos)
    */
   async listar({ 
-    limite = 50, 
+    limite = 100, 
     ultimoId = null, 
     situacao = null,
     clienteCpf = null,
     ordenarPor = 'placa',
-    direcao = 'asc'
+    direcao = 'asc',
+    incluirCancelados = false
   } = {}) {
     try {
-      let query = this.collection.orderBy(ordenarPor, direcao);
+      // Busca todos e filtra em memória para evitar problemas de índice composto
+      const snapshot = await this.collection.get();
       
-      if (situacao) {
-        query = this.collection.where('situacao', '==', situacao.toUpperCase())
-                               .orderBy(ordenarPor, direcao);
-      }
-      
-      if (clienteCpf) {
-        query = this.collection.where('clienteCpf', '==', clienteCpf.replace(/\D/g, ''))
-                               .orderBy(ordenarPor, direcao);
-      }
-      
-      if (ultimoId) {
-        const ultimoDoc = await this.collection.doc(ultimoId).get();
-        if (ultimoDoc.exists) {
-          query = query.startAfter(ultimoDoc);
-        }
-      }
-      
-      query = query.limit(limite);
-      const snapshot = await query.get();
-      
-      const veiculos = snapshot.docs.map(doc => ({
+      let veiculos = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
+
+      // Filtra veículos cancelados/excluídos (soft delete)
+      if (!incluirCancelados) {
+        veiculos = veiculos.filter(v => v.statusVeiculo !== 'cancelado');
+      }
+      
+      // Filtra por situação (PAGO, PENDENTE, ATRASADO)
+      if (situacao) {
+        veiculos = veiculos.filter(v => v.situacao?.toUpperCase() === situacao.toUpperCase());
+      }
+      
+      // Filtra por CPF do cliente
+      if (clienteCpf) {
+        const cpfNormalizado = clienteCpf.replace(/\D/g, '');
+        veiculos = veiculos.filter(v => v.clienteCpf === cpfNormalizado);
+      }
+      
+      // Ordena
+      veiculos.sort((a, b) => {
+        const valorA = (a[ordenarPor] || '').toString().toLowerCase();
+        const valorB = (b[ordenarPor] || '').toString().toLowerCase();
+        return direcao === 'asc' 
+          ? valorA.localeCompare(valorB)
+          : valorB.localeCompare(valorA);
+      });
+
+      // Aplica limite
+      if (limite) {
+        veiculos = veiculos.slice(0, limite);
+      }
 
       return {
         success: true,
@@ -132,10 +145,11 @@ class VeiculoServiceV2 {
           .get();
       }
 
-      const veiculos = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })).sort((a, b) => (a.placa || '').localeCompare(b.placa || ''));
+      // Filtra veículos cancelados e ordena por placa
+      const veiculos = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .filter(v => v.statusVeiculo !== 'cancelado')
+        .sort((a, b) => (a.placa || '').localeCompare(b.placa || ''));
 
       return {
         success: true,

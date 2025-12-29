@@ -252,7 +252,7 @@ class ClienteServiceV2 {
   }
 
   /**
-   * Exclui cliente (soft delete - marca como inativo e excluído)
+   * Exclui cliente (verifica veículos ativos primeiro)
    */
   async excluir(id) {
     try {
@@ -263,10 +263,12 @@ class ClienteServiceV2 {
         throw { status: 404, message: 'Cliente não encontrado' };
       }
 
-      // Verifica se há veículos associados
-      const veiculosSnap = await collections.veiculos.where('clienteId', '==', id).limit(1).get();
-      if (!veiculosSnap.empty) {
-        throw { status: 400, message: 'Não é possível excluir cliente com veículos associados. Remova os veículos primeiro.' };
+      // Verifica se há veículos ATIVOS (não cancelados) associados
+      const veiculosSnap = await collections.veiculos.where('clienteId', '==', id).get();
+      const veiculosAtivos = veiculosSnap.docs.filter(d => d.data().statusVeiculo !== 'cancelado');
+      
+      if (veiculosAtivos.length > 0) {
+        throw { status: 400, message: `Não é possível excluir cliente com ${veiculosAtivos.length} veículo(s) ativo(s). Remova os veículos primeiro.` };
       }
 
       await docRef.delete();

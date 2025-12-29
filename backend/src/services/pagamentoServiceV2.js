@@ -62,6 +62,7 @@ class PagamentoServiceV2 {
 
   /**
    * Lista pagamentos de um mês específico
+   * Se não existirem pagamentos para o mês, cria automaticamente baseado nos veículos ativos
    */
   async listarPorMes(mes, ano) {
     try {
@@ -69,6 +70,26 @@ class PagamentoServiceV2 {
       const snapshot = await this.collection
         .where('mesAno', '==', mesAno)
         .get();
+      
+      // Se não houver pagamentos para este mês, cria automaticamente
+      if (snapshot.empty) {
+        console.log(`[PagamentoService] Nenhum pagamento encontrado para ${mesAno}. Criando automaticamente...`);
+        await this.criarPagamentosMes(mes, ano);
+        
+        // Busca novamente após criar
+        const newSnapshot = await this.collection.where('mesAno', '==', mesAno).get();
+        const pagamentos = newSnapshot.docs
+          .map(doc => ({ id: doc.id, ...doc.data() }))
+          .sort((a, b) => (a.clienteNome || '').localeCompare(b.clienteNome || ''));
+
+        return {
+          success: true,
+          pagamentos,
+          mesAno,
+          total: pagamentos.length,
+          mensagem: `Pagamentos criados para ${mesAno}`
+        };
+      }
       
       // Ordena em memória
       const pagamentos = snapshot.docs
@@ -88,13 +109,102 @@ class PagamentoServiceV2 {
   }
 
   /**
+   * Cria pagamentos para um mês específico baseado nos veículos ativos
+   */
+  async criarPagamentosMes(mes, ano) {
+    try {
+      const mesAno = `${ano}-${String(mes).padStart(2, '0')}`;
+      
+      // Busca todos os veículos ativos
+      const veiculosSnap = await collections.veiculos.where('statusVeiculo', '==', 'ativo').get();
+      
+      if (veiculosSnap.empty) {
+        console.log('[PagamentoService] Nenhum veículo ativo encontrado');
+        return { pagamentosCriados: 0 };
+      }
+
+      const batch = collections.pagamentos.firestore.batch();
+      let count = 0;
+
+      for (const doc of veiculosSnap.docs) {
+        const v = doc.data();
+        
+        const pagamento = {
+          veiculoId: doc.id,
+          clienteId: v.clienteId || null,
+          clienteCpf: v.clienteCpf || '',
+          clienteNome: v.clienteNome || '',
+          placa: v.placa || '',
+          modelo: v.modelo || '',
+          
+          ano: parseInt(ano),
+          mes: parseInt(mes),
+          mesAno,
+          
+          valor: v.valor || 0,
+          valorPago: 0,
+          
+          status: 'PENDENTE',
+          dataPagamento: null,
+          formaPagamento: null,
+          
+          createdAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp()
+        };
+
+        const ref = this.collection.doc();
+        batch.set(ref, pagamento);
+        count++;
+      }
+
+      await batch.commit();
+      console.log(`[PagamentoService] ${count} pagamentos criados para ${mesAno}`);
+      return { pagamentosCriados: count };
+    } catch (error) {
+      console.error('Erro ao criar pagamentos do mês:', error);
+      return { pagamentosCriados: 0 };
+    }
+  }
+
+  /**
    * Lista todos os pagamentos de um ano
+   * Se não existirem pagamentos para o mês atual, cria automaticamente
    */
   async listarPorAno(ano) {
     try {
+      const anoInt = parseInt(ano);
       const snapshot = await this.collection
-        .where('ano', '==', ano)
+        .where('ano', '==', anoInt)
         .get();
+      
+      // Se não houver pagamentos para o ano, verifica o mês atual
+      if (snapshot.empty) {
+        const agora = new Date();
+        const mesAtual = agora.getMonth() + 1;
+        const anoAtual = agora.getFullYear();
+        
+        // Se for o ano atual, cria pagamentos para o mês atual
+        if (anoInt === anoAtual) {
+          console.log(`[PagamentoService] Criando pagamentos para ${mesAtual}/${anoInt}...`);
+          await this.criarPagamentosMes(mesAtual, anoInt);
+          
+          // Busca novamente
+          const newSnapshot = await this.collection.where('ano', '==', anoInt).get();
+          const pagamentos = newSnapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() }))
+            .sort((a, b) => {
+              if (a.mes !== b.mes) return b.mes - a.mes;
+              return (a.clienteNome || '').localeCompare(b.clienteNome || '');
+            });
+
+          return {
+            success: true,
+            pagamentos,
+            ano: anoInt,
+            total: pagamentos.length
+          };
+        }
+      }
       
       // Ordena em memória por mês e nome do cliente
       const pagamentos = snapshot.docs
@@ -109,7 +219,7 @@ class PagamentoServiceV2 {
       return {
         success: true,
         pagamentos,
-        ano,
+        ano: anoInt,
         total: pagamentos.length
       };
     } catch (error) {

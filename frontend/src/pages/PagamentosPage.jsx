@@ -770,7 +770,9 @@ function MesSeletor({ mesSelecionado, onMudar }) {
     { value: 10, label: 'Outubro' }, { value: 11, label: 'Novembro' }, { value: 12, label: 'Dezembro' },
   ];
 
-  const anos = [2024, 2025, 2026];
+  // Anos: de 2023 até o próximo ano
+  const anoAtual = new Date().getFullYear();
+  const anos = [anoAtual - 2, anoAtual - 1, anoAtual, anoAtual + 1];
 
   return (
     <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
